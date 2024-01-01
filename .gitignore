@@ -21,5 +21,6 @@ kicad-build/
 # We don't want to lock dependency versions for this library right now
 poetry.lock
 
-# This should be generated, not checked in
+# These should be generated, not checked in
 kipy/enums/_enums.py
+kipy/**/*_pb2.py
