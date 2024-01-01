@@ -16,3 +16,4 @@ wheels/
 MANIFEST
 .env
 .venv
+kicad-build/
