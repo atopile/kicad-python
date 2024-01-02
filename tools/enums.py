@@ -19,20 +19,23 @@ import argparse
 from jinja2 import Template
 import json
 
+def generate_enums(input: str, output: str, template: str):
+    with open(input, 'r') as f:
+        enums = json.load(f)
+
+    with open(template) as f:
+        template = Template(f.read())
+
+    with open(output, 'w') as f:
+        f.write(template.render(enums=enums))
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--input", default="kicad-build/api/enums.json")
     parser.add_argument("--output", default="kipy/enums/_enums.py")
-    parser.add_argument("--template", default="build-tools/enums_template.py")
+    parser.add_argument("--template", default="tools/enums_template.py")
 
     args = parser.parse_args()
 
-    with open(args.input, 'r') as f:
-        enums = json.load(f)
-
-    with open(args.template) as f:
-        template = Template(f.read())
-
-    with open(args.output, 'w') as f:
-        f.write(template.render(enums=enums))
+    generate_enums(args.input, args.output, args.template)
