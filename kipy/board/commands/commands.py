@@ -29,7 +29,7 @@ def create_track(track):
     request = CreateTrack()
     request.track.CopyFrom(track)
     if _client.send(request, reply):
-        return reply.track
+        return reply.tracks[0] if len(reply.tracks) > 0 else None
     raise IOError
 
 def update_track(track):
@@ -38,5 +38,5 @@ def update_track(track):
     request.id.value = track.id.value
     request.track.CopyFrom(track)
     if _client.send(request, reply):
-        return reply.track
+        return reply.tracks[0] if len(reply.tracks) > 0 else None
     raise IOError
