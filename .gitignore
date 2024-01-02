@@ -16,6 +16,8 @@ wheels/
 MANIFEST
 .env
 .venv
+.DS_Store
+
 kicad-build/
 
 # We don't want to lock dependency versions for this library right now

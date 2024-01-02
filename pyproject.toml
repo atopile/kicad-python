@@ -13,9 +13,9 @@ pynng = "^0.7.2"
 Jinja2 = "^3.1.2"
 protoletariat = "^3.2.19"
 
-[tool.poetry.build]
-generate-setup-file = false
-script = "build.py"
+# [tool.poetry.build]
+# generate-setup-file = false
+# script = "build.py"
 
 [build-system]
 requires = ["poetry-core"]
