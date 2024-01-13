@@ -15,28 +15,22 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import platform
 import pynng
+from result import Ok, Err
 
 from google.protobuf.message import Message
 
-from .common.envelope_pb2 import ApiRequest, ApiResponse, ApiStatus
+from .common.envelope_pb2 import ApiRequest, ApiResponse, ApiResponseStatus, ApiStatusCode
 
 class KiCadClient:
-    def __init__(self):
+    def __init__(self, socket_path: str):
+        self._socket_path = socket_path
         self._connect()
 
     def _connect(self):
-        uri = 'ipc://\\.\\pipe\\kicad' if platform.system() == 'Windows' else 'ipc:///tmp/kicad.sock'
-        try:
-            self._conn = pynng.Req0(dial=uri, send_timeout=1000, recv_timeout=1000)
-        except pynng.exceptions.NNGException:
-            self._conn = None
+        self._conn = pynng.Req0(dial=self._socket_path, send_timeout=1000, recv_timeout=1000)
 
-    def send(self, command: Message, response: Message = None):
-        if self._conn is None:
-            self._connect()
-        
+    def send(self, command: Message, response_type: type):
         envelope = ApiRequest()
         envelope.message.Pack(command)
 
@@ -51,10 +45,9 @@ class KiCadClient:
         reply = ApiResponse()
         reply.ParseFromString(reply_data.bytes)
 
-        if reply.status == ApiStatus.AS_OK:
-            if response is not None:
-                reply.message.Unpack(response)
-            return True
+        if reply.status.status == ApiStatusCode.AS_OK:
+            response = response_type()
+            reply.message.Unpack(response)
+            return Ok(response)
         else:
-            return False
-
+            return Err("KiCad returned error: {}", reply.status.error_message)
