@@ -22,7 +22,7 @@ import string
 from result import Ok, Err
 
 from .client import KiCadClient
-from .common import commands
+from .proto.common import commands
 
 class ApiError(Exception):
     pass
@@ -36,16 +36,14 @@ def random_client_name() -> str:
 class KiCad:
     def __init__(self, socket_path: str=default_socket_path(),
                  client_name: str=random_client_name(),
-                 kicad_token: str=None):
-        self._socket = KiCadClient(socket_path)
-        self._client_name = client_name
-        self._kicad_token = kicad_token
-
+                 kicad_token: str=""):
+        self._client = KiCadClient(socket_path, client_name, kicad_token)
+        
     def get_version(self):
         """
         :return: the KiCad version as a string, including any package-specific info
         """
-        match self._socket.send(commands.GetVersion(), commands.GetVersionResponse):
+        match self._client.send(commands.GetVersion(), commands.GetVersionResponse):
             case Ok(response):
                 return response.version.full_version
             case Err(e):
@@ -61,21 +59,21 @@ class KiCad:
         :return: a value from the KIAPI.COMMON.COMMANDS.RUN_ACTION_STATUS enum
         """
         r = commands.RunActionResponse()
-        if self._socket.send(commands.RunAction(), r):
+        if self._client.send(commands.RunAction(), r):
             return r.status
         raise IOError
 
     def refresh_editor(self, editor):
         r = commands.RefreshEditor()
         r.frame = editor
-        if self._socket.send(r, None):
+        if self._client.send(r, None):
             return
         raise IOError
 
     def begin_commit(self):
-        self._socket.send(commands.BeginCommit())
+        self._client.send(commands.BeginCommit())
 
     def end_commit(self, message: str):
         m = commands.EndCommit()
         m.message = message
-        self._socket.send(m)
+        self._client.send(m)

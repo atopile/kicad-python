@@ -20,11 +20,13 @@ from result import Ok, Err
 
 from google.protobuf.message import Message
 
-from .common.envelope_pb2 import ApiRequest, ApiResponse, ApiStatusCode
+from .proto.common import ApiRequest, ApiResponse, ApiStatusCode
 
 class KiCadClient:
-    def __init__(self, socket_path: str):
+    def __init__(self, socket_path: str, client_name: str, kicad_token: str):
         self._socket_path = socket_path
+        self._client_name = client_name
+        self._kicad_token = kicad_token
         self._connect()
 
     def _connect(self):
@@ -33,6 +35,8 @@ class KiCadClient:
     def send(self, command: Message, response_type: Message):
         envelope = ApiRequest()
         envelope.message.Pack(command)
+        envelope.header.kicad_token = self._kicad_token
+        envelope.header.client_name = self._client_name
 
         try:
             self._conn.send(envelope.SerializeToString())
@@ -48,6 +52,10 @@ class KiCadClient:
         if reply.status.status == ApiStatusCode.AS_OK:
             response = response_type()
             reply.message.Unpack(response)
+
+            if self._kicad_token == "":
+                self._kicad_token = reply.header.kicad_token
+
             return Ok(response)
         else:
-            return Err("KiCad returned error: {}", reply.status.error_message)
+            return Err("KiCad returned error: {}".format(reply.status.error_message))

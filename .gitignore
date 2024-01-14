@@ -17,6 +17,7 @@ MANIFEST
 .env
 .venv
 .DS_Store
+.vscode/
 
 kicad-build/
 

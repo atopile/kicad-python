@@ -26,7 +26,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--input", default="kicad/api/proto")
-    parser.add_argument("--output", default="kipy")
+    parser.add_argument("--output", default="kipy/proto")
     parser.add_argument("--protoc", help="Path to protoc",
                         default="protoc.exe" if platform.system() == "Windows" else "protoc")
     parser.add_argument("--protol", help="Path to protoletariat",
@@ -36,6 +36,11 @@ if __name__ == '__main__':
 
     output_path = os.path.abspath(args.output)
     input_path = os.path.abspath(args.input)
+
+    try:
+        os.mkdir(output_path)
+    except FileExistsError:
+        pass
 
     proto_sources = []
 

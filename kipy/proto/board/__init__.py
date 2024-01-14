@@ -17,4 +17,4 @@
 
 # flake8: noqa
 
-from .units import from_mm, to_mm
+from .board_types_pb2 import *

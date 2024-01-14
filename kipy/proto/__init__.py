@@ -15,21 +15,6 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# THIS FILE WAS AUTOMATICALLY GENERATED.  DO NOT MODIFY IT.
-
 # flake8: noqa
 
-from .base_commands_pb2 import GetVersion, GetVersionResponse
-from .editor_commands_pb2 import (
-    RefreshEditor,
-    GetOpenDocuments,
-    GetOpenDocumentsResponse,
-    GetItems,
-    GetItemsResponse,
-    CreateItems,
-    CreateItemsResponse,
-    UpdateItems,
-    UpdateItemsResponse,
-    DeleteItems,
-    DeleteItemsResponse
-    )
+from .board import *
