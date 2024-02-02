@@ -22,6 +22,9 @@ from google.protobuf.message import Message
 
 from kipy.proto.common import ApiRequest, ApiResponse, ApiStatusCode
 
+class ApiError(Exception):
+    pass
+
 class KiCadClient:
     def __init__(self, socket_path: str, client_name: str, kicad_token: str):
         self._socket_path = socket_path

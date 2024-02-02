@@ -15,7 +15,10 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# flake8: noqa
+from google.protobuf.any_pb2 import Any
+from google.protobuf.message import Message
 
-from .units import from_mm, to_mm
-from .proto import pack_any
+def pack_any(object: Message) -> Any:
+    a = Any()
+    a.Pack(object)
+    return a

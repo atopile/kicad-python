@@ -24,12 +24,9 @@ from typing import List
 from result import Ok, Err
 
 from kipy.board import Board
-from kipy.client import KiCadClient
+from kipy.client import KiCadClient, ApiError
 from kipy.proto.common import commands
 from kipy.proto.common.types import DocumentType, DocumentSpecifier
-
-class ApiError(Exception):
-    pass
 
 def default_socket_path() -> str:
     path = os.environ.get('KICAD_API_SOCKET')
