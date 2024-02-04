@@ -36,6 +36,12 @@ if __name__=='__main__':
                      and layer.layer.layer_id >= PCB_LAYER_ID.F_Cu]
     
     fpi = FootprintInstance()
+    fpi.reference_field.text.text = "STACKUP1"
+    fpi.reference_field.text.attributes.visible = False
+    fpi.value_field.text.attributes.visible = False
+    fpi.attributes.not_in_schematic = True
+    fpi.attributes.exclude_from_bill_of_materials = True
+    fpi.attributes.exclude_from_position_files = True
     fp = fpi.definition
 
     offset = 0
