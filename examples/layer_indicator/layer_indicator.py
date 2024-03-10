@@ -36,23 +36,26 @@ if __name__=='__main__':
     stackup = board.get_stackup()
     defaults = board.get_graphics_defaults()[BoardLayerClass.BLC_COPPER]
 
-    sizing_text = Text()
-    sizing_text.layer.layer_id = PCB_LAYER_ID.F_Cu
+    sizing_pcb_text = Text()
+    sizing_text = sizing_pcb_text.text
+    sizing_text.layer.id = PCB_LAYER_ID.F_Cu
     sizing_text.position.x_nm = 0
     sizing_text.position.y_nm = 0
     sizing_text.text = "0"
     sizing_text.attributes.CopyFrom(defaults.text)
 
-    char_width = board.get_text_extents(sizing_text).size.x
+    char_width = board.get_text_extents(sizing_pcb_text).size.x
 
     copper_layers = [layer for layer in stackup.layers
-                     if layer.layer.layer_id <= PCB_LAYER_ID.B_Cu
-                     and layer.layer.layer_id >= PCB_LAYER_ID.F_Cu]
+                     if layer.layer.id <= PCB_LAYER_ID.B_Cu
+                     and layer.layer.id >= PCB_LAYER_ID.F_Cu]
     
     fpi = FootprintInstance()
-    fpi.reference_field.text.text = "STACKUP1"
-    fpi.reference_field.text.attributes.visible = False
-    fpi.value_field.text.attributes.visible = False
+    fpi.reference_field.text.text.text = "STACKUP1"
+    fpi.reference_field.text.text.attributes.CopyFrom(defaults.text)
+    fpi.reference_field.text.text.attributes.visible = False
+    fpi.value_field.text.text.attributes.CopyFrom(defaults.text)
+    fpi.value_field.text.text.attributes.visible = False
     fpi.attributes.not_in_schematic = True
     fpi.attributes.exclude_from_bill_of_materials = True
     fpi.attributes.exclude_from_position_files = True
@@ -62,17 +65,20 @@ if __name__=='__main__':
     layer_idx = 1
     for copper_layer in copper_layers:
         f = Text()
-        f.layer.layer_id = copper_layer.layer.layer_id
-        f.text = "%d" % layer_idx
-        f.locked = True
-        f.position.x_nm = offset
-        f.position.y_nm = 0
+        innerText = f.text
+        innerText.layer.id = copper_layer.layer.id
+        innerText.text = "%d" % layer_idx
+        innerText.locked = True
+        innerText.position.x_nm = offset
+        innerText.position.y_nm = 0
+        innerText.attributes.CopyFrom(defaults.text)
+        innerText.attributes.visible = True
         fmsg = Any()
         fmsg.Pack(f)
         fp.items.append(fmsg)
 
         padding = 1 if layer_idx == 9 else 0.5
-        item_width = int((len(f.text) + padding) * char_width)
+        item_width = int((len(innerText.text) + padding) * char_width)
 
         offset += item_width
         layer_idx += 1
