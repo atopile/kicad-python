@@ -1,4 +1,4 @@
-# Building kipy
+# Building kicad-python
 
 First, install `poetry` and use it to install the required Python dependencies
 
@@ -25,23 +25,45 @@ $ python tools/generate_protos.py
 Note you may need to pass additional args to CMake to get KiCad building;
 see the KiCad build documentation for your platform at dev-docs.kicad.org.
 
+After you have initially cloned this repository, to update in the future, run
+
+```sh
+$ git pull
+$ git submodule update
+$ python tools/enums.py
+$ python tools/generate_protos.py
+```
+
+(at least, until we get this working inside a `build.py`)
+
 To package the Python library for installation:
 
 ```sh
 $ poetry build
 ```
 
-# Testing
+# Running examples
 
-The easiest way is to install the built module into whatever Python you are running:
+Get into a virtual environment for development using Poetry, and then install
+the dependencies and the built package:
 
 ```sh
-$ pip3 install dist/kipy-<whatever>.whl
+$ poetry shell
+$ poetry install
 ```
 
 Then you can do something like
 
 ```sh
-$ pip3 install pyqt6
-$ python3 examples/tracks.py
+$ python3 examples/layer_indicator/layer_indicator.py
 ```
+
+This will work if you have a KiCad instance running, with the API server enabled,
+and the server is listening at the default location (which will be the case if there
+are no other instances of KiCad open at the time).
+
+# Testing changes
+
+Before committing, run `nox`, which will run checks such as linting.
+
+We'll eventually add tests which will run here too :)
