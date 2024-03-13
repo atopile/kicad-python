@@ -15,9 +15,9 @@
 # updated and repacked as action plugin by Antoine Pintout, May 2019
 # rewritten to use kicad-python instead of SWIG by Jon Evans, March 2024
 
-# This script will round PCBNEW traces by shortening traces at intersections, 
+# This script will round PCBNEW traces by shortening traces at intersections,
 # and filling new traces between. This process is repeated four times.
-# The resulting board is saved in a new file. 
+# The resulting board is saved in a new file.
 
 import math
 import os
@@ -33,58 +33,93 @@ from round_tracks_utils import (
     reverseTrack,
     shortenTrack,
     similarPoints,
-    withinPad
+    withinPad,
 )
 from ui.round_tracks_gui import RoundTracksDialog
 
 RADIUS_DEFAULT = 2.0
 PASSES_DEFAULT = 3
 
-class RoundTracks(RoundTracksDialog):
 
+class RoundTracks(RoundTracksDialog):
     def __init__(self):
         super(RoundTracks, self).__init__(None)
         self.kicad = KiCad()
         self.board = self.kicad.get_board()
-        self.basefilename = os.path.join(self.board.document.project.path,
-                                         os.path.splitext(self.board.document.board_filename)[0])
-        if self.basefilename.endswith('-rounded'):
-            self.basefilename = self.basefilename[:-len('-rounded')]
-        self.configfilepath = self.basefilename+".round-tracks-config"
+        self.basefilename = os.path.join(
+            self.board.document.project.path,
+            os.path.splitext(self.board.document.board_filename)[0],
+        )
+
+        if self.basefilename.endswith("-rounded"):
+            self.basefilename = self.basefilename[: -len("-rounded")]
+
+        self.configfilepath = self.basefilename + ".round-tracks-config"
         self.config = {}
         self.netClassCount = 1
         self.load_config()
-        if 'checkboxes' not in self.config:
-            self.config['checkboxes'] = {'new_file':False, 'native':True, 'avoid_junctions':False}
-        self.do_create.SetValue( self.config['checkboxes']['new_file'])
-        self.use_native.SetValue( self.config['checkboxes']['native'])
-        self.avoid_junctions.SetValue( self.config['checkboxes']['avoid_junctions'])
 
-        c = self.config['classes']
+        if "checkboxes" not in self.config:
+            self.config["checkboxes"] = {
+                "new_file": False,
+                "native": True,
+                "avoid_junctions": False,
+            }
+
+        self.do_create.SetValue(self.config["checkboxes"]["new_file"])
+        self.use_native.SetValue(self.config["checkboxes"]["native"])
+        self.avoid_junctions.SetValue(self.config["checkboxes"]["avoid_junctions"])
+
+        c = self.config["classes"]
+
         if "Default" not in c:
-            self.netclasslist.AppendItem( ["Default", True, str(RADIUS_DEFAULT), str(PASSES_DEFAULT)])
+            self.netclasslist.AppendItem(
+                ["Default", True, str(RADIUS_DEFAULT), str(PASSES_DEFAULT)]
+            )
         else:
-            self.netclasslist.AppendItem( ["Default", c['Default']['do_round'],  str(c['Default']['scaling']),  str(c['Default']['passes'])])
+            self.netclasslist.AppendItem(
+                [
+                    "Default",
+                    c["Default"]["do_round"],
+                    str(c["Default"]["scaling"]),
+                    str(c["Default"]["passes"]),
+                ]
+            )
+            
         for class_id in self.board.GetNetClasses():
             classname = str(class_id)
             self.netClassCount += 1
             if classname not in c:
-                self.netclasslist.AppendItem( [classname, True, str(RADIUS_DEFAULT), str(PASSES_DEFAULT)])
+                self.netclasslist.AppendItem(
+                    [classname, True, str(RADIUS_DEFAULT), str(PASSES_DEFAULT)]
+                )
             else:
-                self.netclasslist.AppendItem( [classname, c[classname]['do_round'],  str(c[classname]['scaling']),  str(c[classname]['passes'])])
+                self.netclasslist.AppendItem(
+                    [
+                        classname,
+                        c[classname]["do_round"],
+                        str(c[classname]["scaling"]),
+                        str(c[classname]["passes"]),
+                    ]
+                )
         self.validate_all_data()
 
-
-    def run( self, event ):
+    def run(self, event):
         start = time.time()
         self.apply.SetLabel("Working...")
         self.validate_all_data()
         self.save_config()
 
-        self.prog = wx.ProgressDialog("Processing", "Starting...", 100, self, wx.PD_AUTO_HIDE|wx.PD_APP_MODAL|wx.PD_ELAPSED_TIME)
+        self.prog = wx.ProgressDialog(
+            "Processing",
+            "Starting...",
+            100,
+            self,
+            wx.PD_AUTO_HIDE | wx.PD_APP_MODAL | wx.PD_ELAPSED_TIME,
+        )
 
         if self.do_create.IsChecked():
-            new_name = self.basefilename+"-rounded.kicad_pcb"
+            new_name = self.basefilename + "-rounded.kicad_pcb"
             self.board.SetFileName(new_name)
 
         anySelected = False
@@ -94,23 +129,27 @@ class RoundTracks(RoundTracksDialog):
                 break
 
         avoid = self.avoid_junctions.IsChecked()
-        classes = self.config['classes']
+        classes = self.config["classes"]
         for classname in classes:
-            if classes[classname]['do_round']:
+            if classes[classname]["do_round"]:
                 if self.use_native.IsChecked():
-                    self.addIntermediateTracks(scaling = classes[classname]['scaling'],
-                                               netclass = classname,
-                                               native = True,
-                                               onlySelection = anySelected,
-                                               avoid_junctions = avoid)
+                    self.addIntermediateTracks(
+                        scaling=classes[classname]["scaling"],
+                        netclass=classname,
+                        native=True,
+                        onlySelection=anySelected,
+                        avoid_junctions=avoid,
+                    )
                 else:
-                    for i in range(classes[classname]['passes']):
-                        self.addIntermediateTracks(scaling = classes[classname]['scaling'],
-                                                   netclass = classname,
-                                                   native = False,
-                                                   onlySelection = anySelected,
-                                                   avoid_junctions = avoid,
-                                                   msg=f", pass {i+1}")
+                    for i in range(classes[classname]["passes"]):
+                        self.addIntermediateTracks(
+                            scaling=classes[classname]["scaling"],
+                            netclass=classname,
+                            native=False,
+                            onlySelection=anySelected,
+                            avoid_junctions=avoid,
+                            msg=f", pass {i+1}",
+                        )
 
         # Track selection apparently de-syncs if we've modified it
         if anySelected:
@@ -128,15 +167,17 @@ class RoundTracks(RoundTracksDialog):
         if bool(self.prog):
             self.prog.Destroy()
             wx.Yield()
-        dt = time.time()-start
-        if dt>0.1:
-            wx.MessageBox("Done, took {:.3f} seconds".format(time.time()-start), parent=self)
+        dt = time.time() - start
+        if dt > 0.1:
+            wx.MessageBox(
+                "Done, took {:.3f} seconds".format(time.time() - start), parent=self
+            )
         self.EndModal(wx.ID_OK)
 
-    def on_close( self, event ):
+    def on_close(self, event):
         self.EndModal(wx.ID_OK)
 
-    def on_item_editing( self, event ):
+    def on_item_editing(self, event):
         if bool(self.netclasslist):
             self.validate_all_data()
 
@@ -148,36 +189,46 @@ class RoundTracks(RoundTracksDialog):
                     params = line[:-1].split("\t")
                     new_config_line = {}
                     try:
-                        new_config_line['do_round'] = params[1] == "True"
-                        new_config_line['scaling'] = float(params[2])
-                        new_config_line['passes'] = int(params[3])
+                        new_config_line["do_round"] = params[1] == "True"
+                        new_config_line["scaling"] = float(params[2])
+                        new_config_line["passes"] = int(params[3])
                         new_config[params[0]] = new_config_line
                     except Exception as e:
                         try:
-                            new_config_line['new_file'] = params[0] == "True"
-                            new_config_line['native'] = params[1] == "True"
-                            new_config_line['avoid_junctions'] = params[2] == "True"
-                            self.config['checkboxes'] = new_config_line
+                            new_config_line["new_file"] = params[0] == "True"
+                            new_config_line["native"] = params[1] == "True"
+                            new_config_line["avoid_junctions"] = params[2] == "True"
+                            self.config["checkboxes"] = new_config_line
                         except Exception as e:
                             pass
-        self.config['classes'] = new_config
+        self.config["classes"] = new_config
 
     def save_config(self):
-        classes = self.config['classes']
+        classes = self.config["classes"]
         try:
             with open(self.configfilepath, "w") as configfile:
                 for classname in classes:
-                    configfile.write('%s\t%s\t%s\t%s\n' % (classname,
-                                                           str(classes[classname]['do_round']),
-                                                           str(classes[classname]['scaling']),
-                                                           str(classes[classname]['passes'])))
-                configfile.write('%s\t%s\t%s\n' % (str(self.config['checkboxes']['new_file']),
-                                                   str(self.config['checkboxes']['native']),
-                                                   str(self.config['checkboxes']['avoid_junctions'])))
+                    configfile.write(
+                        "%s\t%s\t%s\t%s\n"
+                        % (
+                            classname,
+                            str(classes[classname]["do_round"]),
+                            str(classes[classname]["scaling"]),
+                            str(classes[classname]["passes"]),
+                        )
+                    )
+                configfile.write(
+                    "%s\t%s\t%s\n"
+                    % (
+                        str(self.config["checkboxes"]["new_file"]),
+                        str(self.config["checkboxes"]["native"]),
+                        str(self.config["checkboxes"]["avoid_junctions"]),
+                    )
+                )
         except PermissionError:
             pass
 
-    def validate_all_data (self):
+    def validate_all_data(self):
         new_config = {}
         for i in range(self.netClassCount):
             for j in range(5):
@@ -198,22 +249,28 @@ class RoundTracks(RoundTracksDialog):
                     except Exception as e:
                         self.netclasslist.SetTextValue(str(PASSES_DEFAULT), i, j)
             new_config[self.netclasslist.GetTextValue(i, 0)] = {
-                'do_round' : self.netclasslist.GetToggleValue(i, 1),
-                'scaling' : float(self.netclasslist.GetTextValue(i, 2)),
-                'passes' : int(self.netclasslist.GetTextValue(i, 3))
+                "do_round": self.netclasslist.GetToggleValue(i, 1),
+                "scaling": float(self.netclasslist.GetTextValue(i, 2)),
+                "passes": int(self.netclasslist.GetTextValue(i, 3)),
             }
-        self.config['classes'] = new_config
-        self.config['checkboxes'] = {
-            'new_file':self.do_create.IsChecked(),
-            'native':self.use_native.IsChecked(),
-            'avoid_junctions':self.avoid_junctions.IsChecked()
-            }
+        self.config["classes"] = new_config
+        self.config["checkboxes"] = {
+            "new_file": self.do_create.IsChecked(),
+            "native": self.use_native.IsChecked(),
+            "avoid_junctions": self.avoid_junctions.IsChecked(),
+        }
 
-    def addIntermediateTracks(self, scaling = RADIUS_DEFAULT, netclass = None, native = False,
-                              onlySelection = False, avoid_junctions = False, msg=""):
-
+    def addIntermediateTracks(
+        self,
+        scaling=RADIUS_DEFAULT,
+        netclass=None,
+        native=False,
+        onlySelection=False,
+        avoid_junctions=False,
+        msg="",
+    ):
         # A 90 degree bend will get a maximum radius of this amount
-        RADIUS = from_mm(scaling /(math.sin( math.pi/4 )+1))
+        RADIUS = from_mm(scaling / (math.sin(math.pi / 4) + 1))
 
         board = self.board
         netcodes = board.GetNetsByNetcode()
@@ -223,16 +280,16 @@ class RoundTracks(RoundTracksDialog):
         tracksToRemove = []
 
         for netcode, net in netcodes.items():
-
             if netclass is not None and netclass == net.GetNetClassName():
-
                 # BOARD::TracksInNet casts everything to a PCB_TRACK, even PCB_VIA and PCB_ARC
                 # tracksInNet = board.TracksInNet(net.GetNetCode())
                 tracksInNet = []
                 viasInNet = []
                 for t in allTracks:
-                    if t.GetNetCode() == netcode and (not onlySelection or t.IsSelected()):
-                        if t.GetClass() == 'PCB_VIA':
+                    if t.GetNetCode() == netcode and (
+                        not onlySelection or t.IsSelected()
+                    ):
+                        if t.GetClass() == "PCB_VIA":
                             viasInNet.append(t)
                         else:
                             tracksInNet.append(t)
@@ -262,9 +319,14 @@ class RoundTracks(RoundTracksDialog):
                 BCuPadsInNet = []
 
                 for p in allPads:
-                    if p.GetNetCode() == netcode and (not onlySelection or t.IsSelected()):
+                    if p.GetNetCode() == netcode and (
+                        not onlySelection or t.IsSelected()
+                    ):
                         attr = p.GetAttribute()
-                        if attr == pcbnew.PAD_ATTRIB_NPTH or attr == pcbnew.PAD_ATTRIB_PTH:
+                        if (
+                            attr == pcbnew.PAD_ATTRIB_NPTH
+                            or attr == pcbnew.PAD_ATTRIB_PTH
+                        ):
                             padsInNet.append(p)
                         else:
                             if p.GetLayerSet().Contains(31):
@@ -276,24 +338,28 @@ class RoundTracks(RoundTracksDialog):
                     tracks = tracksPerLayer[layer]
 
                     # add all the possible intersections to a unique set, for iterating over later
-                    intersections = set();  
+                    intersections = set()
                     for t1 in range(len(tracks)):
-                        for t2 in range(t1+1, len(tracks)):
+                        for t2 in range(t1 + 1, len(tracks)):
                             # check if these two tracks share an endpoint
                             # reduce it to a 2-part tuple so there are not multiple objects of the same point in the set
-                            if(tracks[t1].IsPointOnEnds(tracks[t2].GetStart())): 
-                                intersections.add((tracks[t2].GetStart().x, tracks[t2].GetStart().y))
-                            if(tracks[t1].IsPointOnEnds(tracks[t2].GetEnd())):
-                                intersections.add((tracks[t2].GetEnd().x, tracks[t2].GetEnd().y))
+                            if tracks[t1].IsPointOnEnds(tracks[t2].GetStart()):
+                                intersections.add(
+                                    (tracks[t2].GetStart().x, tracks[t2].GetStart().y)
+                                )
+                            if tracks[t1].IsPointOnEnds(tracks[t2].GetEnd()):
+                                intersections.add(
+                                    (tracks[t2].GetEnd().x, tracks[t2].GetEnd().y)
+                                )
 
                     # for each remaining intersection, shorten each track by the same amount, and place a track between.
                     tracksToAdd = []
                     arcsToAdd = []
                     trackLengths = {}
                     for ip in intersections:
-                        (newX, newY) = ip;
+                        (newX, newY) = ip
                         intersection = pcbnew.VECTOR2I(newX, newY)
-                        tracksHere = [];
+                        tracksHere = []
                         for t1 in tracks:
                             if similarPoints(t1.GetStart(), intersection):
                                 tracksHere.append(t1)
@@ -302,13 +368,15 @@ class RoundTracks(RoundTracksDialog):
                                 reverseTrack(t1)
                                 tracksHere.append(t1)
 
-                        if len(tracksHere) == 0 or (avoid_junctions and len(tracksHere)>2):
+                        if len(tracksHere) == 0 or (
+                            avoid_junctions and len(tracksHere) > 2
+                        ):
                             continue
 
                         # if there are any arcs or vias present, skip the intersection entirely
                         skip = False
                         for t1 in tracksHere:
-                            if t1.GetClass() != 'PCB_TRACK':
+                            if t1.GetClass() != "PCB_TRACK":
                                 skip = True
                                 break
 
@@ -332,55 +400,117 @@ class RoundTracks(RoundTracksDialog):
                         if skip:
                             continue
 
-                        shortest=-1
+                        shortest = -1
                         for t1 in tracksHere:
                             if id(t1) not in trackLengths:
                                 trackLengths[id(t1)] = t1.GetLength()
-                            if shortest == -1 or trackLengths[id(t1)]<trackLengths[id(shortest)]:
+                            if (
+                                shortest == -1
+                                or trackLengths[id(t1)] < trackLengths[id(shortest)]
+                            ):
                                 shortest = t1
 
-                        #sort these tracks by angle, so new tracks can be drawn between them
-                        tracksHere.sort(key = getTrackAngle)
+                        # sort these tracks by angle, so new tracks can be drawn between them
+                        tracksHere.sort(key=getTrackAngle)
 
                         if native:
-                            halfTrackAngle = {} # cache this, because after shortening the length may end up zero
+                            halfTrackAngle = {}  # cache this, because after shortening the length may end up zero
                             for t1 in range(len(tracksHere)):
-                                halfTrackAngle[t1] = getTrackAngleDifference( tracksHere[t1], tracksHere[(t1+1)%len(tracksHere)] )/2
+                                halfTrackAngle[t1] = (
+                                    getTrackAngleDifference(
+                                        tracksHere[t1],
+                                        tracksHere[(t1 + 1) % len(tracksHere)],
+                                    )
+                                    / 2
+                                )
 
                             for t1 in range(len(tracksHere)):
-                                f = math.sin( halfTrackAngle[t1] )+1
-                                if shortenTrack(tracksHere[t1], min(trackLengths[id(shortest)] *0.5, RADIUS *f )):
+                                f = math.sin(halfTrackAngle[t1]) + 1
+                                if shortenTrack(
+                                    tracksHere[t1],
+                                    min(trackLengths[id(shortest)] * 0.5, RADIUS * f),
+                                ):
                                     tracksToRemove.append(tracksHere[t1])
 
                             for t1 in range(len(tracksHere)):
                                 if not (len(tracksHere) == 2 and t1 == 1):
-                                    theta = math.pi/2 - halfTrackAngle[t1]
-                                    f = 1/(2*math.cos(theta) +2)
+                                    theta = math.pi / 2 - halfTrackAngle[t1]
+                                    f = 1 / (2 * math.cos(theta) + 2)
 
                                     sp = cloneVECTOR2I(tracksHere[t1].GetStart())
-                                    ep = cloneVECTOR2I(tracksHere[(t1+1)%len(tracksHere)].GetStart())
-                                    if halfTrackAngle[t1]> math.pi/2 -0.001:
-                                        tracksToAdd.append((sp, ep, tracksHere[t1].GetWidth(), tracksHere[t1].GetLayer(), tracksHere[t1].GetNetCode()))
+                                    ep = cloneVECTOR2I(
+                                        tracksHere[
+                                            (t1 + 1) % len(tracksHere)
+                                        ].GetStart()
+                                    )
+                                    if halfTrackAngle[t1] > math.pi / 2 - 0.001:
+                                        tracksToAdd.append(
+                                            (
+                                                sp,
+                                                ep,
+                                                tracksHere[t1].GetWidth(),
+                                                tracksHere[t1].GetLayer(),
+                                                tracksHere[t1].GetNetCode(),
+                                            )
+                                        )
                                     else:
-                                        mp = pcbnew.VECTOR2I(int(newX*(1-f*2)+sp.x*f+ep.x*f), int(newY*(1-f*2)+sp.y*f+ep.y*f))
-                                        arcsToAdd.append((sp, ep, mp, tracksHere[t1].GetWidth(), tracksHere[t1].GetLayer(), tracksHere[t1].GetNetCode()))
+                                        mp = pcbnew.VECTOR2I(
+                                            int(
+                                                newX * (1 - f * 2) + sp.x * f + ep.x * f
+                                            ),
+                                            int(
+                                                newY * (1 - f * 2) + sp.y * f + ep.y * f
+                                            ),
+                                        )
+                                        arcsToAdd.append(
+                                            (
+                                                sp,
+                                                ep,
+                                                mp,
+                                                tracksHere[t1].GetWidth(),
+                                                tracksHere[t1].GetLayer(),
+                                                tracksHere[t1].GetNetCode(),
+                                            )
+                                        )
 
                         else:
-                            #shorten all these tracks
+                            # shorten all these tracks
                             for t1 in range(len(tracksHere)):
-                                theta = math.pi/2 - getTrackAngleDifference( tracksHere[t1], tracksHere[(t1+1)%len(tracksHere)] )/2
-                                f = 1/(2*math.cos(theta) +2)
-                                shortenTrack(tracksHere[t1], min(trackLengths[id(shortest)] * f, RADIUS ))
+                                theta = (
+                                    math.pi / 2
+                                    - getTrackAngleDifference(
+                                        tracksHere[t1],
+                                        tracksHere[(t1 + 1) % len(tracksHere)],
+                                    )
+                                    / 2
+                                )
+                                f = 1 / (2 * math.cos(theta) + 2)
+                                shortenTrack(
+                                    tracksHere[t1],
+                                    min(trackLengths[id(shortest)] * f, RADIUS),
+                                )
 
-                            #connect the new startpoints in a circle around the old center point
+                            # connect the new startpoints in a circle around the old center point
                             for t1 in range(len(tracksHere)):
-                                #dont add 2 new tracks in the 2 track case
+                                # dont add 2 new tracks in the 2 track case
                                 if not (len(tracksHere) == 2 and t1 == 1):
                                     newPoint1 = cloneVECTOR2I(tracksHere[t1].GetStart())
-                                    newPoint2 = cloneVECTOR2I(tracksHere[(t1+1)%len(tracksHere)].GetStart())
-                                    tracksToAdd.append((newPoint1, newPoint2, tracksHere[t1].GetWidth(), tracksHere[t1].GetLayer(), tracksHere[t1].GetNetCode()))
+                                    newPoint2 = cloneVECTOR2I(
+                                        tracksHere[
+                                            (t1 + 1) % len(tracksHere)
+                                        ].GetStart()
+                                    )
+                                    tracksToAdd.append(
+                                        (
+                                            newPoint1,
+                                            newPoint2,
+                                            tracksHere[t1].GetWidth(),
+                                            tracksHere[t1].GetLayer(),
+                                            tracksHere[t1].GetNetCode(),
+                                        )
+                                    )
 
-                    #add all the new tracks in post, so as not to cause problems with set iteration
+                    # add all the new tracks in post, so as not to cause problems with set iteration
                     for trackpoints in tracksToAdd:
                         (sp, ep, width, layer, net) = trackpoints
 
@@ -408,12 +538,15 @@ class RoundTracks(RoundTracksDialog):
                         if onlySelection:
                             arc.SetSelected()
 
-            self.prog.Pulse(f"Netclass: {netclass}, {netcode+1} of {len(netcodes)}{msg}")
+            self.prog.Pulse(
+                f"Netclass: {netclass}, {netcode+1} of {len(netcodes)}{msg}"
+            )
 
         for t in tracksToRemove:
             board.Remove(t)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     app = wx.App()
     rt = RoundTracks()
     rt.ShowModal()
