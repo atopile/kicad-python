@@ -26,7 +26,7 @@ import time
 
 from kipy import KiCad
 from kipy.enums import PCB_LAYER_ID
-from kipy.board_types import Arc, Track
+from kipy.board_types import Arc, Track, PadType
 from kipy.util import from_mm
 
 from round_tracks_utils import (
@@ -323,11 +323,7 @@ class RoundTracks(RoundTracksDialog):
 
                 for p in allPads:
                     if p.net == net and (not onlySelection or t in selected):
-                        attr = p.GetAttribute()
-                        if (
-                            attr == pcbnew.PAD_ATTRIB_NPTH
-                            or attr == pcbnew.PAD_ATTRIB_PTH
-                        ):
+                        if p.pad_type in [PadType.PT_NPTH, PadType.PT_PTH]:
                             padsInNet.append(p)
                         else:
                             if p.GetLayerSet().Contains(31):
