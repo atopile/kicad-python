@@ -85,9 +85,9 @@ class RoundTracks(RoundTracksDialog):
                     str(c["Default"]["passes"]),
                 ]
             )
-            
-        for class_id in self.board.GetNetClasses():
-            classname = str(class_id)
+
+        for net_class in self.kicad.get_project(self.board.document).get_net_classes():
+            classname = net_class.name
             self.netClassCount += 1
             if classname not in c:
                 self.netclasslist.AppendItem(

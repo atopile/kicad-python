@@ -23,6 +23,7 @@ from typing import List
 
 from kipy.board import Board
 from kipy.client import KiCadClient, ApiError
+from kipy.project import Project
 from kipy.proto.common import commands
 from kipy.proto.common.types import DocumentType, DocumentSpecifier
 
@@ -45,6 +46,15 @@ class KiCad:
     def __init__(self, socket_path: str=default_socket_path(),
                  client_name: str=random_client_name(),
                  kicad_token: str=default_kicad_token()):
+        """Creates a connection to a running KiCad instance
+
+        :param socket_path: The path to the IPC API socket (leave default to read from the
+            KICAD_API_SOCKET environment variable, which will be set automatically by KiCad when
+            launching API plugins, or to use the default platform-dependent socket path if the
+            environment variable is not set).
+        "param client_name: A unique name identifying this plugin instance.  Leave default to
+            generate a random client name. 
+        """
         self._client = KiCadClient(socket_path, client_name, kicad_token)
         
     def get_version(self):
@@ -69,9 +79,13 @@ class KiCad:
         command.type = doc_type
         response = self._client.send(command, commands.GetOpenDocumentsResponse)
         return response.documents
+    
+    def get_project(self, document: DocumentSpecifier) -> Project:
+        """Returns a Project object for the given document"""
+        return Project(self._client, document)
             
     def get_board(self) -> Board:
-        """Retrieves an open board"""
+        """Retrieves a reference to the PCB open in KiCad, if one exists"""
         docs = self.get_open_documents(DocumentType.DOCTYPE_PCB)
         if len(docs) == 0:
             raise ApiError("Expected to be able to retrieve at least one board")
