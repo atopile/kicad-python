@@ -122,7 +122,7 @@ class RoundTracks(RoundTracksDialog):
 
         if self.do_create.IsChecked():
             new_name = self.basefilename + "-rounded.kicad_pcb"
-            self.board.SetFileName(new_name)
+            self.board.save_as(new_name)
 
         anySelected = False
         for item in self.board.get_selection():
@@ -152,11 +152,6 @@ class RoundTracks(RoundTracksDialog):
                             avoid_junctions=avoid,
                             msg=f", pass {i+1}",
                         )
-
-        # Track selection apparently de-syncs if we've modified it
-        if anySelected:
-            for t in self.board.GetTracks():
-                t.ClearSelected()
 
         # if m_AutoRefillZones is set, we should skip here, but PCBNEW_SETTINGS is not exposed to swig
         # ZONE_FILLER has SetProgressReporter, but PROGRESS_REPORTER is also not available, so we can't use it
@@ -278,261 +273,249 @@ class RoundTracks(RoundTracksDialog):
         allVias = board.get_vias()
         allPads = board.get_pads()
         selected = board.get_selection()
-        nets = board.get_nets()
+        nets = board.get_nets(netclass_filter=netclass)
 
         tracksToRemove = []
 
         for net in nets:
-            if netclass is not None and netclass == net.GetNetClassName():
-                # BOARD::TracksInNet casts everything to a PCB_TRACK, even PCB_VIA and PCB_ARC
-                # tracksInNet = board.TracksInNet(net.GetNetCode())
-                tracksInNet = []
-                viasInNet = []
-                for t in allTracks:
-                    if t.net == net and (
-                        not onlySelection or t in selected
-                    ):
-                        if t.GetClass() == "PCB_VIA":
-                            viasInNet.append(t)
-                        else:
-                            tracksInNet.append(t)
+            tracksInNet = [t for t in allTracks if t.net == net]
+            viasInNet = [v for v in allVias if v.net == net]
 
-                tracksPerLayer = {}
-                # separate track by layer
-                for t in tracksInNet:
-                    layer = t.layer
-                    if layer not in tracksPerLayer:
-                        tracksPerLayer[layer] = []
-                    tracksPerLayer[layer].append(t)
+            tracksPerLayer = {}
+            # separate track by layer
+            for t in tracksInNet:
+                layer = t.layer
+                if layer not in tracksPerLayer:
+                    tracksPerLayer[layer] = []
+                tracksPerLayer[layer].append(t)
 
-                for v in viasInNet:
-                    # a buried/blind via will report only layers affected
-                    # a through via will return all 32 possible layers
-                    layerSet = v.GetLayerSet().CuStack()
-                    for layer in tracksPerLayer:
-                        if layer in layerSet:
-                            tracksPerLayer[layer].append(v)
-
-                # TH pads cover all layers
-                # SMD/CONN pads only touch F.Cu and B.Cu (layers 0 and 31)
-                # Due to glitch in KiCad, pad.GetLayer() always returns 0. Need to use GetLayerSet().Contains() to actually check
-
-                padsInNet = []
-                FCuPadsInNet = []
-                BCuPadsInNet = []
-
-                for p in allPads:
-                    if p.net == net and (not onlySelection or t in selected):
-                        if p.pad_type in [PadType.PT_NPTH, PadType.PT_PTH]:
-                            padsInNet.append(p)
-                        else:
-                            if p.GetLayerSet().Contains(31):
-                                BCuPadsInNet.append(p)
-                            else:
-                                FCuPadsInNet.append(p)
-
+            for v in viasInNet:
+                # a buried/blind via will report only layers affected
+                # a through via will return all 32 possible layers
+                layerSet = v.GetLayerSet().CuStack()
                 for layer in tracksPerLayer:
-                    tracks = tracksPerLayer[layer]
+                    if layer in layerSet:
+                        tracksPerLayer[layer].append(v)
 
-                    # add all the possible intersections to a unique set, for iterating over later
-                    intersections = set()
-                    for t1 in range(len(tracks)):
-                        for t2 in range(t1 + 1, len(tracks)):
-                            # check if these two tracks share an endpoint
-                            # reduce it to a 2-part tuple so there are not multiple objects of the same point in the set
-                            if tracks[t1].IsPointOnEnds(tracks[t2].GetStart()):
-                                intersections.add(
-                                    (tracks[t2].GetStart().x, tracks[t2].GetStart().y)
-                                )
-                            if tracks[t1].IsPointOnEnds(tracks[t2].GetEnd()):
-                                intersections.add(
-                                    (tracks[t2].GetEnd().x, tracks[t2].GetEnd().y)
-                                )
+            # TH pads cover all layers
+            # SMD/CONN pads only touch F.Cu and B.Cu (layers 0 and 31)
+            # Due to glitch in KiCad, pad.GetLayer() always returns 0. Need to use GetLayerSet().Contains() to actually check
 
-                    # for each remaining intersection, shorten each track by the same amount, and place a track between.
-                    tracksToAdd = []
-                    arcsToAdd = []
-                    trackLengths = {}
-                    for ip in intersections:
-                        (newX, newY) = ip
-                        tracksHere = []
-                        for t1 in tracks:
-                            if similarPoints(t1.start, ip):
-                                tracksHere.append(t1)
-                            elif similarPoints(t1.end, ip):
-                                # flip track such that all tracks start at the IP
-                                reverseTrack(t1)
-                                tracksHere.append(t1)
+            padsInNet = []
+            FCuPadsInNet = []
+            BCuPadsInNet = []
 
-                        if len(tracksHere) == 0 or (
-                            avoid_junctions and len(tracksHere) > 2
-                        ):
-                            continue
+            for p in allPads:
+                if p.net == net and (not onlySelection or p in selected):
+                    if p.pad_type in [PadType.PT_NPTH, PadType.PT_PTH]:
+                        padsInNet.append(p)
+                    else:
+                        if p.GetLayerSet().Contains(31):
+                            BCuPadsInNet.append(p)
+                        else:
+                            FCuPadsInNet.append(p)
 
-                        # if there are any arcs or vias present, skip the intersection entirely
-                        skip = False
-                        for t1 in tracksHere:
-                            if t1.GetClass() != "PCB_TRACK":
+            for layer in tracksPerLayer:
+                tracks = tracksPerLayer[layer]
+
+                # add all the possible intersections to a unique set, for iterating over later
+                intersections = set()
+                for t1 in range(len(tracks)):
+                    for t2 in range(t1 + 1, len(tracks)):
+                        # check if these two tracks share an endpoint
+                        # reduce it to a 2-part tuple so there are not multiple objects of the same point in the set
+                        if tracks[t1].IsPointOnEnds(tracks[t2].GetStart()):
+                            intersections.add(
+                                (tracks[t2].GetStart().x, tracks[t2].GetStart().y)
+                            )
+                        if tracks[t1].IsPointOnEnds(tracks[t2].GetEnd()):
+                            intersections.add(
+                                (tracks[t2].GetEnd().x, tracks[t2].GetEnd().y)
+                            )
+
+                # for each remaining intersection, shorten each track by the same amount, and place a track between.
+                tracksToAdd = []
+                arcsToAdd = []
+                trackLengths = {}
+                for ip in intersections:
+                    (newX, newY) = ip
+                    tracksHere = []
+                    for t1 in tracks:
+                        if similarPoints(t1.start, ip):
+                            tracksHere.append(t1)
+                        elif similarPoints(t1.end, ip):
+                            # flip track such that all tracks start at the IP
+                            reverseTrack(t1)
+                            tracksHere.append(t1)
+
+                    if len(tracksHere) == 0 or (
+                        avoid_junctions and len(tracksHere) > 2
+                    ):
+                        continue
+
+                    # if there are any arcs or vias present, skip the intersection entirely
+                    skip = False
+                    for t1 in tracksHere:
+                        if t1.GetClass() != "PCB_TRACK":
+                            skip = True
+                            break
+
+                    # If the intersection is within a pad, but none of the tracks end within the pad, skip
+                    for p in padsInNet:
+                        if withinPad(p, ip, tracksHere):
+                            skip = True
+                            break
+
+                    if layer == PCB_LAYER_ID.F_Cu:
+                        for p in FCuPadsInNet:
+                            if withinPad(p, ip, tracksHere):
                                 skip = True
                                 break
-
-                        # If the intersection is within a pad, but none of the tracks end within the pad, skip
-                        for p in padsInNet:
+                    elif layer == PCB_LAYER_ID.B_Cu:
+                        for p in BCuPadsInNet:
                             if withinPad(p, ip, tracksHere):
                                 skip = True
                                 break
 
-                        if layer == PCB_LAYER_ID.F_Cu:
-                            for p in FCuPadsInNet:
-                                if withinPad(p, ip, tracksHere):
-                                    skip = True
-                                    break
-                        elif layer == PCB_LAYER_ID.B_Cu:
-                            for p in BCuPadsInNet:
-                                if withinPad(p, ip, tracksHere):
-                                    skip = True
-                                    break
+                    if skip:
+                        continue
 
-                        if skip:
-                            continue
+                    shortest = -1
+                    for t1 in tracksHere:
+                        if id(t1) not in trackLengths:
+                            trackLengths[id(t1)] = t1.GetLength()
+                        if (
+                            shortest == -1
+                            or trackLengths[id(t1)] < trackLengths[id(shortest)]
+                        ):
+                            shortest = t1
 
-                        shortest = -1
-                        for t1 in tracksHere:
-                            if id(t1) not in trackLengths:
-                                trackLengths[id(t1)] = t1.GetLength()
-                            if (
-                                shortest == -1
-                                or trackLengths[id(t1)] < trackLengths[id(shortest)]
+                    # sort these tracks by angle, so new tracks can be drawn between them
+                    tracksHere.sort(key=getTrackAngle)
+
+                    if native:
+                        halfTrackAngle = {}  # cache this, because after shortening the length may end up zero
+                        for t1 in range(len(tracksHere)):
+                            halfTrackAngle[t1] = (
+                                getTrackAngleDifference(
+                                    tracksHere[t1],
+                                    tracksHere[(t1 + 1) % len(tracksHere)],
+                                )
+                                / 2
+                            )
+
+                        for t1 in range(len(tracksHere)):
+                            f = math.sin(halfTrackAngle[t1]) + 1
+                            if shortenTrack(
+                                tracksHere[t1],
+                                min(trackLengths[id(shortest)] * 0.5, RADIUS * f),
                             ):
-                                shortest = t1
+                                tracksToRemove.append(tracksHere[t1])
 
-                        # sort these tracks by angle, so new tracks can be drawn between them
-                        tracksHere.sort(key=getTrackAngle)
-
-                        if native:
-                            halfTrackAngle = {}  # cache this, because after shortening the length may end up zero
-                            for t1 in range(len(tracksHere)):
-                                halfTrackAngle[t1] = (
-                                    getTrackAngleDifference(
-                                        tracksHere[t1],
-                                        tracksHere[(t1 + 1) % len(tracksHere)],
-                                    )
-                                    / 2
-                                )
-
-                            for t1 in range(len(tracksHere)):
-                                f = math.sin(halfTrackAngle[t1]) + 1
-                                if shortenTrack(
-                                    tracksHere[t1],
-                                    min(trackLengths[id(shortest)] * 0.5, RADIUS * f),
-                                ):
-                                    tracksToRemove.append(tracksHere[t1])
-
-                            for t1 in range(len(tracksHere)):
-                                if not (len(tracksHere) == 2 and t1 == 1):
-                                    theta = math.pi / 2 - halfTrackAngle[t1]
-                                    f = 1 / (2 * math.cos(theta) + 2)
-
-                                    sp = tracksHere[t1].start
-                                    ep = tracksHere[(t1 + 1) % len(tracksHere)].start
-                    
-                                    if halfTrackAngle[t1] > math.pi / 2 - 0.001:
-                                        tracksToAdd.append(
-                                            (
-                                                sp,
-                                                ep,
-                                                tracksHere[t1].GetWidth(),
-                                                tracksHere[t1].GetLayer(),
-                                                tracksHere[t1].GetNetCode(),
-                                            )
-                                        )
-                                    else:
-                                        mp = (
-                                            int(
-                                                newX * (1 - f * 2) + sp.x * f + ep.x * f
-                                            ),
-                                            int(
-                                                newY * (1 - f * 2) + sp.y * f + ep.y * f
-                                            ),
-                                        )
-                                        arcsToAdd.append(
-                                            (
-                                                sp,
-                                                ep,
-                                                mp,
-                                                tracksHere[t1].GetWidth(),
-                                                tracksHere[t1].GetLayer(),
-                                                tracksHere[t1].GetNetCode(),
-                                            )
-                                        )
-
-                        else:
-                            # shorten all these tracks
-                            for t1 in range(len(tracksHere)):
-                                theta = (
-                                    math.pi / 2
-                                    - getTrackAngleDifference(
-                                        tracksHere[t1],
-                                        tracksHere[(t1 + 1) % len(tracksHere)],
-                                    )
-                                    / 2
-                                )
+                        for t1 in range(len(tracksHere)):
+                            if not (len(tracksHere) == 2 and t1 == 1):
+                                theta = math.pi / 2 - halfTrackAngle[t1]
                                 f = 1 / (2 * math.cos(theta) + 2)
-                                shortenTrack(
-                                    tracksHere[t1],
-                                    min(trackLengths[id(shortest)] * f, RADIUS),
-                                )
 
-                            # connect the new startpoints in a circle around the old center point
-                            for t1 in range(len(tracksHere)):
-                                # dont add 2 new tracks in the 2 track case
-                                if not (len(tracksHere) == 2 and t1 == 1):
-                                    newPoint1 = tracksHere[t1].start
-                                    newPoint2 = tracksHere[(t1 + 1) % len(tracksHere)].start
+                                sp = tracksHere[t1].start
+                                ep = tracksHere[(t1 + 1) % len(tracksHere)].start
+                
+                                if halfTrackAngle[t1] > math.pi / 2 - 0.001:
                                     tracksToAdd.append(
                                         (
-                                            newPoint1,
-                                            newPoint2,
+                                            sp,
+                                            ep,
+                                            tracksHere[t1].GetWidth(),
+                                            tracksHere[t1].GetLayer(),
+                                            tracksHere[t1].GetNetCode(),
+                                        )
+                                    )
+                                else:
+                                    mp = (
+                                        int(
+                                            newX * (1 - f * 2) + sp.x * f + ep.x * f
+                                        ),
+                                        int(
+                                            newY * (1 - f * 2) + sp.y * f + ep.y * f
+                                        ),
+                                    )
+                                    arcsToAdd.append(
+                                        (
+                                            sp,
+                                            ep,
+                                            mp,
                                             tracksHere[t1].GetWidth(),
                                             tracksHere[t1].GetLayer(),
                                             tracksHere[t1].GetNetCode(),
                                         )
                                     )
 
-                    # add all the new tracks in post, so as not to cause problems with set iteration
-                    for trackpoints in tracksToAdd:
-                        (sp, ep, width, layer, net) = trackpoints
+                    else:
+                        # shorten all these tracks
+                        for t1 in range(len(tracksHere)):
+                            theta = (
+                                math.pi / 2
+                                - getTrackAngleDifference(
+                                    tracksHere[t1],
+                                    tracksHere[(t1 + 1) % len(tracksHere)],
+                                )
+                                / 2
+                            )
+                            f = 1 / (2 * math.cos(theta) + 2)
+                            shortenTrack(
+                                tracksHere[t1],
+                                min(trackLengths[id(shortest)] * f, RADIUS),
+                            )
 
-                        track = Track()
-                        track.start = sp
-                        track.end = ep
-                        track.width = width
-                        track.layer = layer
-                        track.net = net
-                        created_track = board.create_items(track)[0]
-                        if onlySelection:
-                            board.add_to_selection(created_track)
+                        # connect the new startpoints in a circle around the old center point
+                        for t1 in range(len(tracksHere)):
+                            # dont add 2 new tracks in the 2 track case
+                            if not (len(tracksHere) == 2 and t1 == 1):
+                                newPoint1 = tracksHere[t1].start
+                                newPoint2 = tracksHere[(t1 + 1) % len(tracksHere)].start
+                                tracksToAdd.append(
+                                    (
+                                        newPoint1,
+                                        newPoint2,
+                                        tracksHere[t1].GetWidth(),
+                                        tracksHere[t1].GetLayer(),
+                                        tracksHere[t1].GetNetCode(),
+                                    )
+                                )
 
-                    for trackpoints in arcsToAdd:
-                        (sp, ep, mp, width, layer, net) = trackpoints
+                # add all the new tracks in post, so as not to cause problems with set iteration
+                for trackpoints in tracksToAdd:
+                    (sp, ep, width, layer, net) = trackpoints
 
-                        arc = Arc()
-                        arc.SetStart(sp)
-                        arc.SetMid(mp)
-                        arc.SetEnd(ep)
-                        arc.SetWidth(width)
-                        arc.SetLayer(layer)
-                        board.Add(arc)
-                        arc.SetNetCode(net)
-                        if onlySelection:
-                            arc.SetSelected()
+                    track = Track()
+                    track.start = sp
+                    track.end = ep
+                    track.width = width
+                    track.layer = layer
+                    track.net = net
+                    created_track = board.create_items(track)[0]
+                    if onlySelection:
+                        board.add_to_selection(created_track)
+
+                for trackpoints in arcsToAdd:
+                    (sp, ep, mp, width, layer, net) = trackpoints
+
+                    arc = Arc()
+                    arc.SetStart(sp)
+                    arc.SetMid(mp)
+                    arc.SetEnd(ep)
+                    arc.SetWidth(width)
+                    arc.SetLayer(layer)
+                    arc.net = net
+                    created_arc = board.create_items(arc)[0]
+                    if onlySelection:
+                        board.add_to_selection(created_arc)
 
             self.prog.Pulse(
                 f"Netclass: {netclass}, {net.code+1} of {len(nets)}{msg}"
             )
 
-        for t in tracksToRemove:
-            board.Remove(t)
+        board.remove_items(tracksToRemove)
 
 
 if __name__ == "__main__":

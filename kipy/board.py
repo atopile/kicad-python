@@ -72,6 +72,12 @@ class Board:
         """Returns the file name of the board"""
         return self._doc.board_filename
     
+    def save(self):
+        pass
+
+    def save_as(self, filename: str):
+        pass
+    
     def create_items(self, items: Union[Wrapper, Iterable[Wrapper]]) -> List[Wrapper]:
         command = CreateItems()
         command.header.document.CopyFrom(self._doc)
@@ -81,7 +87,10 @@ class Board:
         else:
             command.items.extend([pack_any(i.proto) for i in items])
 
-        return [unwrap(result.item) for result in self._kicad.send(command, CreateItemsResponse).created_items]
+        return [
+            unwrap(result.item)
+            for result in self._kicad.send(command, CreateItemsResponse).created_items
+        ]
 
     def get_items(self, type_filter: Union[KICAD_T, List[KICAD_T]]) -> Sequence[Wrapper]:
         """Retrieves items from the board, optionally filtering to a single or set of types"""
@@ -108,12 +117,24 @@ class Board:
     
     def get_pads(self) -> Sequence[Pad]:
         return [cast(Pad, item) for item in self.get_items(type_filter=[KICAD_T.PCB_PAD_T])]
-
-    def get_nets(self):
+    
+    def get_footprints(self) -> Sequence[FootprintInstance]:
+        return [
+            cast(FootprintInstance, item)
+            for item in self.get_items(type_filter=[KICAD_T.PCB_FOOTPRINT_T])
+        ]
+    
+    def update_items(self):
         pass
 
-    def get_selection(self):
+    def remove_items(self, items: Union[Wrapper, Sequence[Wrapper]]):
         pass
+
+    def get_nets(self, netclass_filter: Union[str, Sequence[str], None]) -> Sequence[Net]:
+        return []
+
+    def get_selection(self) -> Sequence[Wrapper]:
+        return []
 
     def add_to_selection(self, items):
         pass

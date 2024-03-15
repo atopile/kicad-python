@@ -21,7 +21,7 @@ from google.protobuf.any_pb2 import Any
 
 from kipy.enums import PCB_LAYER_ID
 from kipy.proto.common.types import KIID
-from kipy.proto.common.types.base_types_pb2 import LockedState
+from kipy.proto.common.types.base_types_pb2 import LockedState, Layer
 from kipy.proto.board import board_types_pb2
 from kipy.common_types import TextAttributes
 from kipy.geometry import Vector2
@@ -37,23 +37,79 @@ class Net(Wrapper):
     def __init__(self, proto: board_types_pb2.Net = board_types_pb2.Net()):
         self._proto = proto
 
+    @property
+    def name(self) -> str:
+        return self._proto.name
+
+    @property
+    def code(self) -> int:
+        return self._proto.code.value
+
 class Track(Wrapper):
     """Represents a straight track segment"""
-    def __init__(self, proto: board_types_pb2.Track):
+    def __init__(self, proto: board_types_pb2.Track = board_types_pb2.Track()):
         self._proto = proto
+
+    @property
+    def net(self) -> Net:
+        return Net(self._proto.net)
+    
+    @net.setter
+    def net(self, net: Net):
+        self._proto.net.CopyFrom(net.proto)
+    
+    @property
+    def layer(self) -> PCB_LAYER_ID:
+        return PCB_LAYER_ID(self._proto.layer.id)
+    
+    @layer.setter
+    def layer(self, layer: PCB_LAYER_ID):
+        self._proto.layer.id = layer.value
 
 class Arc(Wrapper):
     """Represents an arc track segment"""
-    def __init__(self, proto: board_types_pb2.Arc):
+    def __init__(self, proto: board_types_pb2.Arc = board_types_pb2.Arc()):
         self._proto = proto
+
+    @property
+    def net(self) -> Net:
+        return Net(self._proto.net)
+    
+    @net.setter
+    def net(self, net: Net):
+        self._proto.net.CopyFrom(net.proto)
+    
+    @property
+    def layer(self) -> PCB_LAYER_ID:
+        return PCB_LAYER_ID(self._proto.layer.id)
+    
+    @layer.setter
+    def layer(self, layer: PCB_LAYER_ID):
+        self._proto.layer.id = layer.value
 
 class Via(Wrapper):
-    def __init__(self, proto: board_types_pb2.Via):
+    def __init__(self, proto: board_types_pb2.Via = board_types_pb2.Via()):
         self._proto = proto
 
+    @property
+    def net(self) -> Net:
+        return Net(self._proto.net)
+    
+    @net.setter
+    def net(self, net: Net):
+        self._proto.net.CopyFrom(net.proto)
+
 class Pad(Wrapper):
-    def __init__(self, proto: board_types_pb2.Pad):
+    def __init__(self, proto: board_types_pb2.Pad = board_types_pb2.Pad()):
         self._proto = proto
+
+    @property
+    def net(self) -> Net:
+        return Net(self._proto.net)
+    
+    @net.setter
+    def net(self, net: Net):
+        self._proto.net.CopyFrom(net.proto)
 
     @property
     def pad_type(self) -> PadType.ValueType:
