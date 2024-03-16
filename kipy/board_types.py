@@ -33,6 +33,11 @@ from kipy.proto.board.board_types_pb2 import (
     PadType 
 )
 
+class BoardItem(Wrapper):
+    @property
+    def id(self):
+        return self.proto.id
+
 class Net(Wrapper):
     def __init__(self, proto: board_types_pb2.Net = board_types_pb2.Net()):
         self._proto = proto
@@ -50,7 +55,7 @@ class Net(Wrapper):
             return self.name == other.name and self.code == other.code
         return NotImplemented
 
-class Track(Wrapper):
+class Track(BoardItem):
     """Represents a straight track segment"""
     def __init__(self, proto: board_types_pb2.Track = board_types_pb2.Track()):
         self._proto = proto
@@ -99,7 +104,7 @@ class Track(Wrapper):
         """Calculates track length in nanometers"""
         return (self.end - self.start).length()
 
-class Arc(Wrapper):
+class Arc(BoardItem):
     """Represents an arc track segment"""
     def __init__(self, proto: board_types_pb2.Arc = board_types_pb2.Arc()):
         self._proto = proto
@@ -152,7 +157,7 @@ class Arc(Wrapper):
     def width(self, width: int):
         self._proto.width.value_nm = width
 
-class Via(Wrapper):
+class Via(BoardItem):
     def __init__(self, proto: board_types_pb2.Via = board_types_pb2.Via()):
         self._proto = proto
 
@@ -164,7 +169,7 @@ class Via(Wrapper):
     def net(self, net: Net):
         self._proto.net.CopyFrom(net.proto)
 
-class Pad(Wrapper):
+class Pad(BoardItem):
     def __init__(self, proto: board_types_pb2.Pad = board_types_pb2.Pad()):
         self._proto = proto
 
@@ -180,7 +185,7 @@ class Pad(Wrapper):
     def pad_type(self) -> PadType.ValueType:
         return self._proto.type
 
-class Text(Wrapper):
+class Text(BoardItem):
     """Represents a free text object, or the text component of a field"""
     def __init__(self, proto: board_types_pb2.Text = board_types_pb2.Text()):
         self._proto = proto
@@ -233,7 +238,7 @@ class Text(Wrapper):
         self._proto.text.attributes.CopyFrom(attributes.proto)
 
 
-class Field(Wrapper):
+class Field(BoardItem):
     """Represents a footprint field"""
     def __init__(self, proto: board_types_pb2.Field = board_types_pb2.Field()):
         self._proto = proto
@@ -298,7 +303,7 @@ class Footprint(Wrapper):
         any.Pack(item.proto)
         self._proto.items.append(any)
 
-class FootprintInstance(Wrapper):
+class FootprintInstance(BoardItem):
     """Represents a footprint instance on a board"""
     def __init__(self, proto: board_types_pb2.FootprintInstance = board_types_pb2.FootprintInstance()):
         self._proto = proto

@@ -20,6 +20,7 @@ from google.protobuf.empty_pb2 import Empty
 
 from kipy.board_types import (
     Arc,
+    BoardItem,
     FootprintInstance,
     Net,
     Pad,
@@ -40,7 +41,9 @@ from kipy.proto.common.commands.editor_commands_pb2 import (
     BeginCommit, BeginCommitResponse, CommitAction,
     EndCommit, EndCommitResponse,
     CreateItems, CreateItemsResponse,
+    UpdateItems, UpdateItemsResponse,
     GetItems, GetItemsResponse,
+    DeleteItems, DeleteItemsResponse,
     BoundingBoxResponse
 )
 from kipy.proto.board import board_pb2
@@ -143,11 +146,36 @@ class Board:
             for item in self.get_items(type_filter=[KICAD_T.PCB_FOOTPRINT_T])
         ]
     
-    def update_items(self):
-        pass
+    def update_items(self, items: Union[BoardItem, Sequence[BoardItem]]):
+        command = UpdateItems()
+        command.header.document.CopyFrom(self._doc)
 
-    def remove_items(self, items: Union[Wrapper, Sequence[Wrapper]]):
-        pass
+        if isinstance(items, BoardItem):
+            command.items.append(pack_any(items.proto))
+        else:
+            command.items.extend([pack_any(i.proto) for i in items])
+
+        if len(command.items) == 0:
+            return
+
+        return [
+            unwrap(result.item)
+            for result in self._kicad.send(command, UpdateItemsResponse).updated_items
+        ]
+
+    def remove_items(self, items: Union[BoardItem, Sequence[BoardItem]]):
+        command = DeleteItems()
+        command.header.document.CopyFrom(self._doc)
+
+        if isinstance(items, BoardItem):
+            command.item_ids.append(items.id)
+        else:
+            command.item_ids.extend([item.id for item in items])
+
+        if len(command.item_ids) == 0:
+            return
+
+        self._kicad.send(command, DeleteItemsResponse)
 
     def get_nets(self, netclass_filter: Union[str, Sequence[str], None]) -> Sequence[Net]:
         command = board_commands_pb2.GetNets()

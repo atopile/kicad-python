@@ -343,6 +343,7 @@ class RoundTracks(RoundTracksDialog):
                 # for each remaining intersection, shorten each track by the same amount, and place a track between.
                 tracksToAdd = []
                 arcsToAdd = []
+                tracksModified = []
                 trackLengths = {}
                 for ip in intersections:
                     (newX, newY) = ip
@@ -354,6 +355,7 @@ class RoundTracks(RoundTracksDialog):
                             # flip track such that all tracks start at the IP
                             reverseTrack(t1)
                             tracksHere.append(t1)
+                            tracksModified.append(t1)
 
                     if len(tracksHere) == 0 or (
                         avoid_junctions and len(tracksHere) > 2
@@ -418,6 +420,8 @@ class RoundTracks(RoundTracksDialog):
                                 min(trackLengths[id(shortest)] * 0.5, RADIUS * f),
                             ):
                                 tracksToRemove.append(tracksHere[t1])
+                            else:
+                                tracksModified.append(tracksHere[t1])
 
                         for t1 in range(len(tracksHere)):
                             if not (len(tracksHere) == 2 and t1 == 1):
@@ -469,6 +473,7 @@ class RoundTracks(RoundTracksDialog):
                                 tracksHere[t1],
                                 min(trackLengths[id(shortest)] * f, RADIUS),
                             )
+                            tracksModified.append(tracksHere[t1])
 
                         # connect the new startpoints in a circle around the old center point
                         for t1 in range(len(tracksHere)):
@@ -513,6 +518,8 @@ class RoundTracks(RoundTracksDialog):
                     created_arc = board.create_items(arc)[0]
                     if onlySelection:
                         board.add_to_selection(created_arc)
+
+                board.update_items(tracksModified)
 
             self.prog.Pulse(
                 f"Netclass: {netclass}, {net.code+1} of {len(nets)}{msg}"
