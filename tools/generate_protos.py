@@ -21,22 +21,11 @@ import os
 import platform
 import subprocess
 
+_default_protoc = "protoc.exe" if platform.system() == "Windows" else "protoc"
+_default_protol = "protol.exe" if platform.system() == "Windows" else "protol"
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument("--input", default="kicad/api/proto")
-    parser.add_argument("--output", default="kipy/proto")
-    parser.add_argument("--protoc", help="Path to protoc",
-                        default="protoc.exe" if platform.system() == "Windows" else "protoc")
-    parser.add_argument("--protol", help="Path to protoletariat",
-                        default="protol.exe" if platform.system() == "Windows" else "protol")
-
-    args = parser.parse_args()
-
-    output_path = os.path.abspath(args.output)
-    input_path = os.path.abspath(args.input)
-
+def generate_protos(input_path: str, output_path: str, protoc: str = _default_protoc,
+                    protol: str = _default_protol):
     try:
         os.mkdir(output_path)
     except FileExistsError:
@@ -49,14 +38,14 @@ if __name__ == '__main__':
             proto_sources.append(os.path.join(input_path, str(root), item))
 
     print("Generating Python classes from protobuf files...")
-    subprocess.run([args.protoc,
+    subprocess.run([protoc,
            "--python_out=" + output_path,
            "--mypy_out=" + output_path,
            "--proto_path=" + input_path,
            *proto_sources])
 
     print("Post-processing with protoletariat...")
-    subprocess.run([args.protol,
+    subprocess.run([protol,
            "--dont-create-package",
            "--in-place",
            "--exclude-google-imports",
@@ -65,3 +54,17 @@ if __name__ == '__main__':
            "--proto-path", input_path,
            *proto_sources])
 
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--input", default="kicad/api/proto")
+    parser.add_argument("--output", default="kipy/proto")
+    parser.add_argument("--protoc", help="Path to protoc", default=_default_protoc)
+    parser.add_argument("--protol", help="Path to protoletariat", default=_default_protol)
+
+    args = parser.parse_args()
+
+    output_path = os.path.abspath(args.output)
+    input_path = os.path.abspath(args.input)
+
+    generate_protos(input_path, output_path, args.protoc, args.protol)
