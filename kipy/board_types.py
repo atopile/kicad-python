@@ -15,7 +15,8 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Dict, Sequence, Set
+from token import OP
+from typing import Dict, Sequence, Set, Optional
 from google.protobuf.message import Message
 from google.protobuf.any_pb2 import Any
 
@@ -26,21 +27,24 @@ from kipy.proto.board import board_types_pb2
 from kipy.common_types import TextAttributes
 from kipy.geometry import Vector2
 from kipy.util import unpack_any
-from kipy.wrapper import Wrapper
+from kipy.wrapper import Item, Wrapper
 
 # Re-exported protobuf enum types
 from kipy.proto.board.board_types_pb2 import (
     PadType 
 )
 
-class BoardItem(Wrapper):
+class BoardItem(Item):
     @property
     def id(self):
         return self.proto.id
 
 class Net(Wrapper):
-    def __init__(self, proto: board_types_pb2.Net = board_types_pb2.Net()):
-        self._proto = proto
+    def __init__(self, proto: Optional[board_types_pb2.Net] = None):
+        self._proto = board_types_pb2.Net()
+
+        if proto is not None:
+            self._proto.CopyFrom(proto)
 
     @property
     def name(self) -> str:
@@ -57,8 +61,11 @@ class Net(Wrapper):
 
 class Track(BoardItem):
     """Represents a straight track segment"""
-    def __init__(self, proto: board_types_pb2.Track = board_types_pb2.Track()):
-        self._proto = proto
+    def __init__(self, proto: Optional[board_types_pb2.Track] = None):
+        self._proto = board_types_pb2.Track()
+
+        if proto is not None:
+            self._proto.CopyFrom(proto)
 
     @property
     def net(self) -> Net:
@@ -104,34 +111,13 @@ class Track(BoardItem):
         """Calculates track length in nanometers"""
         return (self.end - self.start).length()
 
-class Arc(BoardItem):
+class Arc(Track):
     """Represents an arc track segment"""
-    def __init__(self, proto: board_types_pb2.Arc = board_types_pb2.Arc()):
-        self._proto = proto
+    def __init__(self, proto: Optional[board_types_pb2.Arc] = None):
+        self._proto = board_types_pb2.Arc()
 
-    @property
-    def net(self) -> Net:
-        return Net(self._proto.net)
-    
-    @net.setter
-    def net(self, net: Net):
-        self._proto.net.CopyFrom(net.proto)
-    
-    @property
-    def layer(self) -> PCB_LAYER_ID:
-        return PCB_LAYER_ID(self._proto.layer.id)
-    
-    @layer.setter
-    def layer(self, layer: PCB_LAYER_ID):
-        self._proto.layer.id = layer.value
-
-    @property
-    def start(self) -> Vector2:
-        return Vector2(self._proto.start)
-    
-    @start.setter
-    def start(self, point: Vector2):
-        self._proto.start.CopyFrom(point.proto)
+        if proto is not None:
+            self._proto.CopyFrom(proto)
 
     @property
     def mid(self) -> Vector2:
@@ -141,25 +127,12 @@ class Arc(BoardItem):
     def mid(self, point: Vector2):
         self._proto.mid.CopyFrom(point.proto)
 
-    @property
-    def end(self) -> Vector2:
-        return Vector2(self._proto.end)
-    
-    @end.setter
-    def end(self, point: Vector2):
-        self._proto.end.CopyFrom(point.proto)
-
-    @property
-    def width(self) -> int:
-        return self._proto.width.value_nm
-    
-    @width.setter
-    def width(self, width: int):
-        self._proto.width.value_nm = width
-
 class Via(BoardItem):
-    def __init__(self, proto: board_types_pb2.Via = board_types_pb2.Via()):
-        self._proto = proto
+    def __init__(self, proto: Optional[board_types_pb2.Via] = None):
+        self._proto = board_types_pb2.Via()
+
+        if proto is not None:
+            self._proto.CopyFrom(proto)
 
     @property
     def position(self) -> Vector2:
@@ -186,8 +159,11 @@ class Via(BoardItem):
         return s
 
 class Pad(BoardItem):
-    def __init__(self, proto: board_types_pb2.Pad = board_types_pb2.Pad()):
-        self._proto = proto
+    def __init__(self, proto: Optional[board_types_pb2.Pad] = None):
+        self._proto = board_types_pb2.Pad()
+
+        if proto is not None:
+            self._proto.CopyFrom(proto)
 
     @property
     def position(self) -> Vector2:
@@ -219,8 +195,11 @@ class Pad(BoardItem):
 
 class Text(BoardItem):
     """Represents a free text object, or the text component of a field"""
-    def __init__(self, proto: board_types_pb2.Text = board_types_pb2.Text()):
-        self._proto = proto
+    def __init__(self, proto: Optional[board_types_pb2.Text] = None):
+        self._proto = board_types_pb2.Text()
+
+        if proto is not None:
+            self._proto.CopyFrom(proto)
 
     @property
     def id(self) -> KIID:
@@ -272,8 +251,11 @@ class Text(BoardItem):
 
 class Field(BoardItem):
     """Represents a footprint field"""
-    def __init__(self, proto: board_types_pb2.Field = board_types_pb2.Field()):
-        self._proto = proto
+    def __init__(self, proto: Optional[board_types_pb2.Field] = None):
+        self._proto = board_types_pb2.Field()
+
+        if proto is not None:
+            self._proto.CopyFrom(proto)
 
     @property
     def id(self) -> int:
@@ -294,8 +276,11 @@ class Field(BoardItem):
 
 class FootprintAttributes(Wrapper):
     """The built-in attributes that a Footprint or FootprintInstance may have"""
-    def __init__(self, proto: board_types_pb2.FootprintAttributes = board_types_pb2.FootprintAttributes()):
-        self._proto = proto
+    def __init__(self, proto: Optional[board_types_pb2.FootprintAttributes] = None):
+        self._proto = board_types_pb2.FootprintAttributes()
+
+        if proto is not None:
+            self._proto.CopyFrom(proto)
 
     @property
     def not_in_schematic(self) -> bool:
@@ -323,8 +308,11 @@ class FootprintAttributes(Wrapper):
 
 class Footprint(Wrapper):
     """Represents a library footprint"""
-    def __init__(self, proto: board_types_pb2.Footprint = board_types_pb2.Footprint()):
-        self._proto = proto
+    def __init__(self, proto: Optional[board_types_pb2.Footprint] = None):
+        self._proto = board_types_pb2.Footprint()
+
+        if proto is not None:
+            self._proto.CopyFrom(proto)
 
     @property
     def items(self) -> Sequence[Wrapper]:
@@ -337,8 +325,11 @@ class Footprint(Wrapper):
 
 class FootprintInstance(BoardItem):
     """Represents a footprint instance on a board"""
-    def __init__(self, proto: board_types_pb2.FootprintInstance = board_types_pb2.FootprintInstance()):
-        self._proto = proto
+    def __init__(self, proto: Optional[board_types_pb2.FootprintInstance] = None):
+        self._proto = board_types_pb2.FootprintInstance()
+
+        if proto is not None:
+            self._proto.CopyFrom(proto)
 
     @property
     def id(self) -> KIID:

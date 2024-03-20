@@ -17,15 +17,21 @@
 
 from __future__ import annotations
 
-from copy import deepcopy
+from typing import Optional
 import math
 from kipy.proto.common import types
 from kipy.wrapper import Wrapper
 
 class Vector2(Wrapper):
     """Wraps a kiapi.common.types.Vector2, aka VECTOR2I"""
-    def __init__(self, proto: types.Vector2):
-        self._proto = deepcopy(proto)
+    def __init__(self, proto: Optional[types.Vector2]):
+        self._proto = types.Vector2()
+
+        if proto is not None:
+            self._proto.CopyFrom(proto)
+
+    def __repr__(self):
+        return f"Vector2({self.x}, {self.y})"
 
     @classmethod
     def from_xy(cls, x_nm: int, y_nm: int):

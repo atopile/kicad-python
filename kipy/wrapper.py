@@ -15,9 +15,17 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from abc import ABC
+from abc import ABC, abstractmethod
+
+from kipy.proto.common.types.base_types_pb2 import KIID
 
 class Wrapper(ABC):
     @property
     def proto(self):
         return self.__dict__['_proto']
+    
+class Item(Wrapper):
+    @property
+    @abstractmethod
+    def id(self) -> KIID:
+        return KIID()

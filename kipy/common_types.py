@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Optional
 from kipy.proto.common import types
 from kipy.proto.common.types.base_types_pb2 import KIID
 from kipy.wrapper import Wrapper
@@ -28,8 +29,11 @@ class Commit:
         return self._id
 
 class TextAttributes(Wrapper):
-    def __init__(self, proto: types.TextAttributes = types.TextAttributes()):
-        self._proto = proto
+    def __init__(self, proto: Optional[types.TextAttributes] = None):
+        self._proto = types.TextAttributes()
+
+        if proto is not None:
+            self._proto.CopyFrom(proto)
 
     @property
     def visible(self) -> bool:
