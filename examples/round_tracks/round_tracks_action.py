@@ -286,6 +286,9 @@ class RoundTracks(RoundTracksDialog):
         itemsToCreate = []
         tracksModified = []
 
+        progressInterval = int(max(1, len(nets) / 100.0 ))
+        lastReport = 0
+
         for net in nets:
             tracksInNet = [t for t in self.allTracks if t.net == net]
             viasInNet = [v for v in self.allVias if v.net == net]
@@ -354,8 +357,6 @@ class RoundTracks(RoundTracksDialog):
                             intersections.add(deepcopy(tracks[t2].end))
 
                 # for each remaining intersection, shorten each track by the same amount, and place a track between.
-                tracksToAdd = []
-                arcsToAdd = []
                 trackLengths = {}
                 
                 for ip in intersections:
@@ -384,18 +385,18 @@ class RoundTracks(RoundTracksDialog):
 
                     # If the intersection is within a pad, but none of the tracks end within the pad, skip
                     for p in padsInNet:
-                        if withinPad(p, ip, tracksHere):
+                        if withinPad(self.board, p, ip, tracksHere):
                             skip = True
                             break
 
                     if layer == PCB_LAYER_ID.F_Cu:
                         for p in FCuPadsInNet:
-                            if withinPad(p, ip, tracksHere):
+                            if withinPad(self.board, p, ip, tracksHere):
                                 skip = True
                                 break
                     elif layer == PCB_LAYER_ID.B_Cu:
                         for p in BCuPadsInNet:
-                            if withinPad(p, ip, tracksHere):
+                            if withinPad(self.board, p, ip, tracksHere):
                                 skip = True
                                 break
 
@@ -441,34 +442,30 @@ class RoundTracks(RoundTracksDialog):
                                 theta = math.pi / 2 - halfTrackAngle[t1]
                                 f = 1 / (2 * math.cos(theta) + 2)
 
-                                sp = deepcopy(tracksHere[t1].start)
-                                ep = deepcopy(tracksHere[(t1 + 1) % len(tracksHere)].start)
+                                sp = tracksHere[t1].start
+                                ep = tracksHere[(t1 + 1) % len(tracksHere)].start
                 
                                 if halfTrackAngle[t1] > math.pi / 2 - 0.001:
-                                    tracksToAdd.append(
-                                        (
-                                            sp,
-                                            ep,
-                                            tracksHere[t1].width,
-                                            tracksHere[t1].layer,
-                                            tracksHere[t1].net,
-                                        )
-                                    )
+                                    track = Track()
+                                    track.start = sp
+                                    track.end = ep
+                                    track.width = tracksHere[t1].width
+                                    track.layer = tracksHere[t1].layer
+                                    track.net = tracksHere[t1].net
+                                    itemsToCreate.append(track)
                                 else:
                                     mp = Vector2.from_xy(
                                         int(newX * (1 - f * 2) + sp.x * f + ep.x * f),
                                         int(newY * (1 - f * 2) + sp.y * f + ep.y * f),
                                     )
-                                    arcsToAdd.append(
-                                        (
-                                            sp,
-                                            ep,
-                                            mp,
-                                            tracksHere[t1].width,
-                                            tracksHere[t1].layer,
-                                            tracksHere[t1].net,
-                                        )
-                                    )
+                                    arc = Arc()
+                                    arc.start = sp
+                                    arc.mid = mp
+                                    arc.end = ep
+                                    arc.width = tracksHere[t1].width
+                                    arc.layer = tracksHere[t1].layer
+                                    arc.net = tracksHere[t1].net
+                                    itemsToCreate.append(arc)
 
                     else:
                         # shorten all these tracks
@@ -492,45 +489,19 @@ class RoundTracks(RoundTracksDialog):
                         for t1 in range(len(tracksHere)):
                             # dont add 2 new tracks in the 2 track case
                             if not (len(tracksHere) == 2 and t1 == 1):
-                                newPoint1 = deepcopy(tracksHere[t1].start)
-                                newPoint2 = deepcopy(tracksHere[(t1 + 1) % len(tracksHere)].start)
-                                tracksToAdd.append(
-                                    (
-                                        newPoint1,
-                                        newPoint2,
-                                        tracksHere[t1].width,
-                                        tracksHere[t1].layer,
-                                        tracksHere[t1].net,
-                                    )
-                                )
+                                track = Track()
+                                track.start = tracksHere[t1].start
+                                track.end = tracksHere[(t1 + 1) % len(tracksHere)].start
+                                track.width = tracksHere[t1].width
+                                track.layer = tracksHere[t1].layer
+                                track.net = tracksHere[t1].net
+                                itemsToCreate.append(track)
 
-                # add all the new tracks in post, so as not to cause problems with set iteration
-                for trackpoints in tracksToAdd:
-                    (sp, ep, width, layer, net) = trackpoints
-
-                    track = Track()
-                    track.start = sp
-                    track.end = ep
-                    track.width = width
-                    track.layer = layer
-                    track.net = net
-                    itemsToCreate.append(track)
-
-                for trackpoints in arcsToAdd:
-                    (sp, ep, mp, width, layer, net) = trackpoints
-
-                    arc = Arc()
-                    arc.start = deepcopy(sp)
-                    arc.mid = deepcopy(mp)
-                    arc.end = deepcopy(ep)
-                    arc.width = width
-                    arc.layer = layer
-                    arc.net = net
-                    itemsToCreate.append(arc)
-
-            self.prog.Pulse(
-                f"Netclass: {netclass}, {net.code+1} of {len(nets)}{msg}"
-            )
+            if net.code - lastReport > progressInterval:
+                self.prog.Pulse(
+                    f"Netclass: {netclass}, {net.code+1} of {len(nets)}{msg}"
+                )
+                lastReport = net.code
 
         createdItems = self.board.create_items(itemsToCreate)
 

@@ -32,9 +32,9 @@ from kipy.board_types import (
 from kipy.client import KiCadClient
 from kipy.common_types import Commit, TextAttributes
 from kipy.enums import KICAD_T
-from kipy.geometry import Box2
+from kipy.geometry import Box2, Vector2
 from kipy.util import pack_any, make_item_type
-from kipy.wrapper import Wrapper
+from kipy.wrapper import Item, Wrapper
 
 from kipy.proto.common.types import DocumentSpecifier, KIID
 from kipy.proto.common.commands.editor_commands_pb2 import (
@@ -44,7 +44,8 @@ from kipy.proto.common.commands.editor_commands_pb2 import (
     UpdateItems, UpdateItemsResponse,
     GetItems, GetItemsResponse,
     DeleteItems, DeleteItemsResponse,
-    BoundingBoxResponse
+    BoundingBoxResponse,
+    HitTest, HitTestResponse, HitTestResult
 )
 from kipy.proto.board import board_pb2
 from kipy.proto.board import board_commands_pb2
@@ -240,3 +241,11 @@ class Board:
 
     def refill_zones(self):
         pass
+
+    def hit_test(self, item: Item, position: Vector2, tolerance: int = 0) -> bool:
+        cmd = HitTest()
+        cmd.header.document.CopyFrom(self._doc)
+        cmd.id.CopyFrom(item.id)
+        cmd.position.CopyFrom(position.proto)
+        cmd.tolerance = tolerance
+        return self._kicad.send(cmd, HitTestResponse).result == HitTestResult.HTR_HIT

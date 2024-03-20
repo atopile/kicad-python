@@ -1,9 +1,10 @@
 import math
 from copy import deepcopy
 from math import pi
-from typing import Union
+from typing import Sequence, Union
 from kipy.geometry import Vector2
-from kipy.board_types import Track, Arc
+from kipy.board import Board
+from kipy.board_types import Track, Arc, Pad
 
 tolerance = 10  # in nanometres
 
@@ -22,19 +23,15 @@ def similarPoints(p1: Vector2, p2: Vector2):
 
 
 # test if an intersection is within the bounds of a pad
-def withinPad(pad, a, tracks):
-    # TODO
-    return False
-    # Bounding box is probably sufficient, unless we had a giant L-shaped pad or something
-    box = pad.GetBoundingBox()
-    if not box.Contains(a):
+def withinPad(board: Board, pad: Pad, a: Vector2, tracks: Sequence[Track]):
+    if not board.hit_test(pad, a):
         return False
 
     # If the intersection is within the pad, return true
     # But if one of the connected tracks is *entirely* within the pad, return false, since rounding won't break connectivity
     inside = True
     for t in tracks:
-        if box.Contains(t.GetEnd()):
+        if board.hit_test(pad, t.end):
             inside = False
     return inside
 
