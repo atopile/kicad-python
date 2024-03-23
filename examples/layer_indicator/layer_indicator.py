@@ -17,10 +17,11 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import cast
+
 from kipy import KiCad
-from kipy.enums import PCB_LAYER_ID
 from kipy.geometry import Vector2
-from kipy.board import BoardLayerClass
+from kipy.board import BoardLayer, BoardLayerClass
 from kipy.board_types import Text, FootprintInstance
 
 
@@ -31,7 +32,7 @@ if __name__=='__main__':
     defaults = board.get_graphics_defaults()[BoardLayerClass.BLC_COPPER]
 
     sizing_text = Text()
-    sizing_text.layer = PCB_LAYER_ID.F_Cu
+    sizing_text.layer = BoardLayer.BL_F_Cu
     sizing_text.position = Vector2.from_xy(0, 0)
     sizing_text.text = "0"
     sizing_text.attributes = defaults.text
@@ -39,10 +40,11 @@ if __name__=='__main__':
     char_width = board.get_text_extents(sizing_text).size.x
 
     copper_layers = [layer for layer in stackup.layers
-                     if layer.layer.id <= PCB_LAYER_ID.B_Cu
-                     and layer.layer.id >= PCB_LAYER_ID.F_Cu]
+                     if layer.layer <= BoardLayer.BL_B_Cu
+                     and layer.layer >= BoardLayer.BL_F_Cu]
     
     fpi = FootprintInstance()
+    fpi.layer = BoardLayer.BL_F_Cu
     fpi.reference_field.text.text = "STACKUP1"
     fpi.reference_field.text.attributes = defaults.text
     fpi.reference_field.text.attributes.visible = False
@@ -57,9 +59,8 @@ if __name__=='__main__':
     layer_idx = 1
     for copper_layer in copper_layers:
         layer_text = Text()
-        layer_text.layer = copper_layer.layer.id
+        layer_text.layer = copper_layer.layer
         layer_text.text = "%d" % layer_idx
-        layer_text.locked = True
         layer_text.position = Vector2.from_xy(offset, 0)
         layer_text.attributes = defaults.text
         layer_text.attributes.visible = True
@@ -71,7 +72,7 @@ if __name__=='__main__':
         offset += item_width
         layer_idx += 1
 
-    created = board.create_items(fpi)
+    created = [cast(FootprintInstance, i) for i in board.create_items(fpi)]
 
     if len(created) == 1:
         board.interactive_move(created[0].id)

@@ -194,8 +194,9 @@ class Pad(BoardItem):
 
 class Text(BoardItem):
     """Represents a free text object, or the text component of a field"""
-    def __init__(self, proto: Optional[board_types_pb2.Text] = None):
-        self._proto = board_types_pb2.Text()
+    def __init__(self, proto: Optional[board_types_pb2.Text] = None,
+                 proto_ref: Optional[board_types_pb2.Text] = None):
+        self._proto = proto_ref if proto_ref is not None else board_types_pb2.Text()
 
         if proto is not None:
             self._proto.CopyFrom(proto)
@@ -241,7 +242,7 @@ class Text(BoardItem):
 
     @property
     def attributes(self) -> TextAttributes:
-        return TextAttributes(self._proto.text.attributes)
+        return TextAttributes(proto_ref=self._proto.text.attributes)
     
     @attributes.setter
     def attributes(self, attributes: TextAttributes):
@@ -250,8 +251,9 @@ class Text(BoardItem):
 
 class Field(BoardItem):
     """Represents a footprint field"""
-    def __init__(self, proto: Optional[board_types_pb2.Field] = None):
-        self._proto = board_types_pb2.Field()
+    def __init__(self, proto: Optional[board_types_pb2.Field] = None,
+                 proto_ref: Optional[board_types_pb2.Field] = None):
+        self._proto = proto_ref if proto_ref is not None else board_types_pb2.Field()
 
         if proto is not None:
             self._proto.CopyFrom(proto)
@@ -266,7 +268,7 @@ class Field(BoardItem):
     
     @property
     def text(self) -> Text:
-        return Text(self._proto.text)
+        return Text(proto_ref=self._proto.text)
     
     @text.setter
     def text(self, text: Text):
@@ -275,8 +277,9 @@ class Field(BoardItem):
 
 class FootprintAttributes(Wrapper):
     """The built-in attributes that a Footprint or FootprintInstance may have"""
-    def __init__(self, proto: Optional[board_types_pb2.FootprintAttributes] = None):
-        self._proto = board_types_pb2.FootprintAttributes()
+    def __init__(self, proto: Optional[board_types_pb2.FootprintAttributes] = None,
+                 proto_ref: Optional[board_types_pb2.FootprintAttributes] = None):
+        self._proto = proto_ref if proto_ref is not None else board_types_pb2.FootprintAttributes()
 
         if proto is not None:
             self._proto.CopyFrom(proto)
@@ -307,8 +310,9 @@ class FootprintAttributes(Wrapper):
 
 class Footprint(Wrapper):
     """Represents a library footprint"""
-    def __init__(self, proto: Optional[board_types_pb2.Footprint] = None):
-        self._proto = board_types_pb2.Footprint()
+    def __init__(self, proto: Optional[board_types_pb2.Footprint] = None,
+                 proto_ref: Optional[board_types_pb2.Footprint] = None):
+        self._proto = proto_ref if proto_ref is not None else board_types_pb2.Footprint()
 
         if proto is not None:
             self._proto.CopyFrom(proto)
@@ -333,22 +337,30 @@ class FootprintInstance(BoardItem):
     @property
     def id(self) -> KIID:
         return self._proto.id
+    
+    @property
+    def layer(self) -> BoardLayer.ValueType:
+        return self._proto.layer
+    
+    @layer.setter
+    def layer(self, layer: BoardLayer.ValueType):
+        self._proto.layer = layer
 
     @property
     def definition(self) -> Footprint:
-        return Footprint(self._proto.definition)
+        return Footprint(proto_ref=self._proto.definition)
     
     @property
     def reference_field(self) -> Field:
-        return Field(self._proto.reference_field)
+        return Field(proto_ref=self._proto.reference_field)
     
     @property
     def value_field(self) -> Field:
-        return Field(self._proto.value_field)
+        return Field(proto_ref=self._proto.value_field)
     
     @property
     def attributes(self) -> FootprintAttributes:
-        return FootprintAttributes(self._proto.attributes)
+        return FootprintAttributes(proto_ref=self._proto.attributes)
     
 _proto_to_object: Dict[type[Message], type[Wrapper]] = {
     board_types_pb2.Arc: Arc,

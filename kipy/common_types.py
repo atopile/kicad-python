@@ -29,8 +29,9 @@ class Commit:
         return self._id
 
 class TextAttributes(Wrapper):
-    def __init__(self, proto: Optional[types.TextAttributes] = None):
-        self._proto = types.TextAttributes()
+    def __init__(self, proto: Optional[types.TextAttributes] = None,
+                 proto_ref: Optional[types.TextAttributes] = None):
+        self._proto = proto_ref if proto_ref is not None else types.TextAttributes()
 
         if proto is not None:
             self._proto.CopyFrom(proto)
