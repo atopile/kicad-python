@@ -108,12 +108,6 @@ class RoundTracks(RoundTracksDialog):
                 )
         self.validate_all_data()
 
-        # self.board.refill_zones()
-        # time.sleep(1)
-        # print(self.kicad.get_version())
-        # time.sleep(1)
-        # print(self.kicad.get_version())
-
     def run(self, event):
         start = time.time()
         self.apply.SetLabel("Working...")

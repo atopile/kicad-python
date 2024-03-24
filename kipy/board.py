@@ -185,7 +185,9 @@ class Board:
 
         self._kicad.send(command, DeleteItemsResponse)
 
-    def get_nets(self, netclass_filter: Union[str, Sequence[str], None]) -> Sequence[Net]:
+    def get_nets(
+        self, netclass_filter: Optional[Union[str, Sequence[str]]] = None
+    ) -> Sequence[Net]:
         command = board_commands_pb2.GetNets()
         command.board.CopyFrom(self._doc)
 
