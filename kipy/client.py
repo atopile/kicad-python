@@ -24,7 +24,7 @@ from kipy.proto.common import ApiRequest, ApiResponse, ApiStatusCode
 
 class ApiError(Exception):
     def __init__(self, message: str, raw_message: str = "",
-                 code: ApiStatusCode.ValueType = ApiStatusCode.AS_BAD_REQUEST):            
+                 code: ApiStatusCode.ValueType = ApiStatusCode.AS_BAD_REQUEST):
          super().__init__(message)
          self._raw_message = raw_message
          self._code = code
@@ -32,7 +32,7 @@ class ApiError(Exception):
     @property
     def code(self) -> ApiStatusCode.ValueType:
         return self._code
-    
+
     @property
     def raw_message(self) -> str:
         return self.raw_message
@@ -68,13 +68,13 @@ class KiCadClient:
             raise IOError("Timeout while receiving reply from KiCad")
         except pynng.exceptions.NNGException as e:
             raise e
-        
+
         reply = ApiResponse()
         reply.ParseFromString(reply_data.bytes)
 
         if reply.status.status == ApiStatusCode.AS_OK:
             response = response_type()
-            
+
             if not reply.message.Unpack(response):
                 raise ApiError(
                     f"Failed to unpack {response_type.__name__} from the response to {type(command).__name__}"
