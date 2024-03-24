@@ -14,11 +14,19 @@
 #
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
+import tempfile
+from typing import Any
 
 import nox
+from nox.sessions import Session
 
 @nox.session
-def lint(session):
-    session.install("poetry")
-    session.run("poetry", "install")
+def lint(session: Session):
+    session.install("ruff")
     session.run("ruff", "check", "kipy")
+
+@nox.session
+def mypy(session: Session) -> None:
+    session.install("poetry")
+    session.run("poetry", "install", "--with", "dev")
+    session.run("mypy", "-p", "kipy")

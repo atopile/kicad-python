@@ -17,9 +17,13 @@
 
 from abc import ABC, abstractmethod
 
+from google.protobuf.message import Message
 from kipy.proto.common.types.base_types_pb2 import KIID
 
 class Wrapper(ABC):
+    def __init__(self, proto: Message):
+        pass
+
     @property
     def proto(self):
         return self.__dict__['_proto']

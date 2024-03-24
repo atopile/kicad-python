@@ -16,15 +16,11 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-import subprocess
 
 from tools.generate_protos import generate_protos
 
 
 if __name__ == "__main__":
-    print("Ensuring KiCad git repository is ready...")
-    subprocess.run(["git", "submodule", "update", "--init"])
-    
     print("Generating protobuf wrappers...")
     proto_in = os.path.join(os.getcwd(), "kicad/api/proto")
     proto_out = os.path.join(os.getcwd(), "kipy/proto")

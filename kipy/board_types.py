@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Dict, Sequence, Set, Optional
+from typing import Dict, Sequence, Set, Optional, cast
 from google.protobuf.message import Message
 from google.protobuf.any_pb2 import Any
 
@@ -110,13 +110,53 @@ class Track(BoardItem):
         """Calculates track length in nanometers"""
         return (self.end - self.start).length()
 
-class Arc(Track):
+class Arc(BoardItem):
     """Represents an arc track segment"""
     def __init__(self, proto: Optional[board_types_pb2.Arc] = None):
         self._proto = board_types_pb2.Arc()
 
         if proto is not None:
             self._proto.CopyFrom(proto)
+
+    @property
+    def net(self) -> Net:
+        return Net(self._proto.net)
+    
+    @net.setter
+    def net(self, net: Net):
+        self._proto.net.CopyFrom(net.proto)
+    
+    @property
+    def layer(self) -> board_types_pb2.BoardLayer.ValueType:
+        return self._proto.layer
+    
+    @layer.setter
+    def layer(self, layer: board_types_pb2.BoardLayer.ValueType):
+        self._proto.layer = layer
+
+    @property
+    def start(self) -> Vector2:
+        return Vector2(self._proto.start)
+    
+    @start.setter
+    def start(self, point: Vector2):
+        self._proto.start.CopyFrom(point.proto)
+
+    @property
+    def end(self) -> Vector2:
+        return Vector2(self._proto.end)
+    
+    @end.setter
+    def end(self, point: Vector2):
+        self._proto.end.CopyFrom(point.proto)
+
+    @property
+    def width(self) -> int:
+        return self._proto.width.value_nm
+    
+    @width.setter
+    def width(self, width: int):
+        self._proto.width.value_nm = width
 
     @property
     def mid(self) -> Vector2:
@@ -154,7 +194,7 @@ class Via(BoardItem):
         layer = self._proto.pad_stack.start_layer
         while layer <= self._proto.pad_stack.end_layer:
             s.add(layer)
-            layer += 1
+            layer = cast(board_types_pb2.BoardLayer.ValueType, layer + 1)
         return s
 
 class Pad(BoardItem):
@@ -189,7 +229,7 @@ class Pad(BoardItem):
         layer = self._proto.pad_stack.start_layer
         while layer <= self._proto.pad_stack.end_layer:
             s.add(layer)
-            layer += 1
+            layer = cast(board_types_pb2.BoardLayer.ValueType, layer + 1)
         return s
 
 class Text(BoardItem):
@@ -259,7 +299,7 @@ class Field(BoardItem):
             self._proto.CopyFrom(proto)
 
     @property
-    def id(self) -> int:
+    def field_id(self) -> int:
         return self._proto.id.id
     
     @property

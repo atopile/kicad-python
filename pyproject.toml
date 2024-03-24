@@ -29,6 +29,8 @@ ruff = "^0.3.2"
 Jinja2 = "^3.1.2"
 protoletariat = "^3.2.19"
 mypy-protobuf = "^3.5.0"
+poetry-plugin-export = "^1.7.1"
+mypy = "^1.9.0"
 
 [build-system]
 requires = [
@@ -41,3 +43,17 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry.build]
 generate-setup-file = false
 script = "build.py"
+
+[tool.ruff]
+exclude = [
+    "kipy/proto"
+]
+
+[tool.mypy]
+exclude = [
+    "kipy/proto"
+]
+
+[[tool.mypy.overrides]]
+module = "pynng"
+ignore_missing_imports = true

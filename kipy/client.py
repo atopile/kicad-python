@@ -16,7 +16,7 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import pynng
-from typing import TypeVar, cast
+from typing import TypeVar
 
 from google.protobuf.message import Message
 
@@ -83,7 +83,7 @@ class KiCadClient:
             if self._kicad_token == "":
                 self._kicad_token = reply.header.kicad_token
 
-            return cast(response_type, response)
+            return response
         else:
             raise ApiError(f"KiCad returned error: {reply.status.error_message}",
                            raw_message=reply.status.error_message, code=reply.status.status)
