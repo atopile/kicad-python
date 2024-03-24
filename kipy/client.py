@@ -35,7 +35,7 @@ class KiCadClient:
     def _connect(self):
         self._conn = pynng.Req0(dial=self._socket_path, send_timeout=3000, recv_timeout=3000)
 
-    R = TypeVar('R')
+    R = TypeVar('R', bound=Message)
 
     def send(self, command: Message, response_type: type[R]) -> R:
         envelope = ApiRequest()
@@ -56,7 +56,11 @@ class KiCadClient:
 
         if reply.status.status == ApiStatusCode.AS_OK:
             response = response_type()
-            reply.message.Unpack(response)
+            
+            if not reply.message.Unpack(response):
+                raise ApiError(
+                    f"Failed to unpack {response_type.__name__} from the response to {type(command).__name__}"
+                )
 
             if self._kicad_token == "":
                 self._kicad_token = reply.header.kicad_token
