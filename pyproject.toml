@@ -26,7 +26,6 @@ pynng = "^0.7.2"
 [tool.poetry.group.dev.dependencies]
 nox = "^2024.3.2"
 ruff = "^0.3.2"
-Jinja2 = "^3.1.2"
 protoletariat = "^3.2.19"
 mypy-protobuf = "^3.5.0"
 poetry-plugin-export = "^1.7.1"
@@ -35,7 +34,6 @@ mypy = "^1.9.0"
 [build-system]
 requires = [
     "poetry-core",
-    "Jinja2 == 3.1.*",
     "protoletariat == 3.2.*"
 ]
 build-backend = "poetry.core.masonry.api"
