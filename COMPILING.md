@@ -2,7 +2,9 @@
 
 First, run `git submodule update --init` to add KiCad's source code as a submodule.
 
-Next, install `poetry` and use it to install the required Python dependencies
+Next install protobuf-compiler
+
+then, install `poetry` and use it to install the required Python dependencies
 
 ```sh
 $ pip3 install poetry pre-commit
