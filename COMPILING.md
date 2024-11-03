@@ -28,10 +28,10 @@ $ poetry shell
 $ poetry install
 ```
 
-Then you can do something like
+Then, start KiCad and run:
 
 ```sh
-$ python3 examples/layer_indicator/layer_indicator.py
+$ python3 examples/hello.py
 ```
 
 This will work if you have a KiCad instance running, with the API server enabled,

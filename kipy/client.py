@@ -42,14 +42,30 @@ class KiCadClient:
         self._socket_path = socket_path
         self._client_name = client_name
         self._kicad_token = kicad_token
-        self._connect()
+        self._connected = False
 
     def _connect(self):
-        self._conn = pynng.Req0(dial=self._socket_path, send_timeout=3000, recv_timeout=3000)
+        if self._connected:
+            self._conn.close()
 
+        try:    
+            self._conn = pynng.Req0(dial=self._socket_path, block_on_dial=True,
+                                    send_timeout=3000, recv_timeout=3000)
+            self._connected = True
+        except pynng.exceptions.NNGException as e:
+            self._connected = False
+            raise e
+
+    @property
+    def connected(self):
+        return self._connected
+    
     R = TypeVar('R', bound=Message)
 
     def send(self, command: Message, response_type: type[R]) -> R:
+        if not self._connected:
+            self._connect()
+
         envelope = ApiRequest()
         envelope.message.Pack(command)
         envelope.header.kicad_token = self._kicad_token
