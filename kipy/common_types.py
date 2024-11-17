@@ -28,6 +28,46 @@ class Commit:
     def id(self) -> KIID:
         return self._id
 
+class Color(Wrapper):
+    def __init__(self, proto: Optional[types.Color] = None,
+                    proto_ref: Optional[types.Color] = None):
+        self._proto = proto_ref if proto_ref is not None else types.Color()
+
+        if proto is not None:
+            self._proto.CopyFrom(proto)
+
+    @property
+    def red(self) -> float:
+        return self._proto.r
+
+    @red.setter
+    def red(self, red: float):
+        self._proto.r = red
+
+    @property
+    def green(self) -> float:
+        return self._proto.g
+
+    @green.setter
+    def green(self, green: float):
+        self._proto.g = green
+
+    @property
+    def blue(self) -> float:
+        return self._proto.b
+
+    @blue.setter
+    def blue(self, blue: float):
+        self._proto.b = blue
+
+    @property
+    def alpha(self) -> float:
+        return self._proto.a
+
+    @alpha.setter
+    def alpha(self, alpha: float):
+        self._proto.a = alpha
+
 class TextAttributes(Wrapper):
     def __init__(self, proto: Optional[types.TextAttributes] = None,
                  proto_ref: Optional[types.TextAttributes] = None):
@@ -71,3 +111,83 @@ class LibraryIdentifier(Wrapper):
 
     def __str__(self) -> str:
         return f"{self.library}:{self.name}"
+
+class StrokeAttributes(Wrapper):
+    def __init__(self, proto: Optional[types.StrokeAttributes] = None,
+                proto_ref: Optional[types.StrokeAttributes] = None):
+        self._proto = proto_ref if proto_ref is not None else types.StrokeAttributes()
+
+        if proto is not None:
+            self._proto.CopyFrom(proto)
+
+    @property
+    def color(self) -> Color:
+        """The stroke color.  Only supported in schematic graphics."""
+        return Color(proto_ref=self._proto.color)
+
+    @color.setter
+    def color(self, color: Color):
+        self._proto.color.CopyFrom(color.proto)
+
+    @property
+    def width(self) -> int:
+        """The stroke line width in nanometers"""
+        return self._proto.width.value_nm
+
+    @width.setter
+    def width(self, width: int):
+        self._proto.width.value_nm = width
+
+    @property
+    def style(self) -> types.StrokeLineStyle.ValueType:
+        return self._proto.style
+
+    @style.setter
+    def style(self, style: types.StrokeLineStyle.ValueType):
+        self._proto.style = style
+
+class GraphicFillAttributes(Wrapper):
+    def __init__(self, proto: Optional[types.GraphicFillAttributes] = None,
+            proto_ref: Optional[types.GraphicFillAttributes] = None):
+        self._proto = proto_ref if proto_ref is not None else types.GraphicFillAttributes()
+
+        if proto is not None:
+            self._proto.CopyFrom(proto)
+
+    @property
+    def filled(self) -> bool:
+        return self._proto.fill_type == types.GraphicFillType.GFT_FILLED
+
+    @filled.setter
+    def filled(self, fill: bool):
+        self._proto.fill_type = (
+            types.GraphicFillType.GFT_FILLED if fill else types.GraphicFillType.GFT_UNFILLED
+        )
+
+    @property
+    def color(self) -> Color:
+        """The fill color.  Only supported in schematic graphics."""
+        return Color(proto_ref=self._proto.color)
+
+    @color.setter
+    def color(self, color: Color):
+        self._proto.color.CopyFrom(color.proto)
+
+class GraphicAttributes(Wrapper):
+    def __init__(self, proto: Optional[types.GraphicAttributes] = None,
+            proto_ref: Optional[types.GraphicAttributes] = None):
+        self._proto = proto_ref if proto_ref is not None else types.GraphicAttributes()
+
+        if proto is not None:
+            self._proto.CopyFrom(proto)
+
+        self._stroke = StrokeAttributes(proto_ref=self._proto.stroke)
+        self._fill = GraphicFillAttributes(proto_ref=self._proto.fill)
+
+    @property
+    def stroke(self) -> StrokeAttributes:
+        return self._stroke
+
+    @property
+    def fill(self) -> GraphicFillAttributes:
+        return self._fill

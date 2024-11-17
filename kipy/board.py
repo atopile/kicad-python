@@ -162,8 +162,12 @@ class Board:
     def get_shapes(self) -> Sequence[Shape]:
         """Retrieves all graphic shapes (not including tracks or text) on the board"""
         return [
-            to_concrete_shape(cast(Shape, item))
-            for item in self.get_items(types=[KiCadObjectType.KOT_PCB_SHAPE])
+            item
+            for item in (
+                to_concrete_shape(cast(Shape, item))
+                for item in self.get_items(types=[KiCadObjectType.KOT_PCB_SHAPE])
+            )
+            if item is not None
         ]
 
     def update_items(self, items: Union[BoardItem, Sequence[BoardItem]]):

@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from math import pi
 from typing import Dict, Sequence, Optional, Union
 from google.protobuf.message import Message
 from google.protobuf.any_pb2 import Any
@@ -22,8 +23,8 @@ from google.protobuf.any_pb2 import Any
 from kipy.proto.common.types import KIID
 from kipy.proto.common.types.base_types_pb2 import LockedState, PolygonWithHoles
 from kipy.proto.board import board_types_pb2
-from kipy.common_types import TextAttributes, LibraryIdentifier
-from kipy.geometry import Vector2
+from kipy.common_types import GraphicAttributes, TextAttributes, LibraryIdentifier
+from kipy.geometry import Box2, Vector2
 from kipy.util import unpack_any
 from kipy.wrapper import Item, Wrapper
 
@@ -255,6 +256,17 @@ class Shape(BoardItem):
     def net(self, net: Net):
         self._proto.net.CopyFrom(net.proto)
 
+    @property
+    def attributes(self) -> GraphicAttributes:
+        return GraphicAttributes(proto_ref=self._proto.attributes)
+
+    @attributes.setter
+    def attributes(self, attributes: GraphicAttributes):
+        self._proto.attributes.CopyFrom(attributes.proto)
+
+    def bounding_box(self) -> Box2:
+        raise NotImplementedError(f"bounding_box() not implemented for {type(self).__name__}")
+
 class Segment(Shape):
     """Represents a graphic line segment (not a track) on a board or footprint"""
     def __init__(self, proto: Optional[board_types_pb2.GraphicShape] = None):
@@ -280,6 +292,13 @@ class Segment(Shape):
     @end.setter
     def end(self, point: Vector2):
         self._proto.segment.end.CopyFrom(point.proto)
+
+    def bounding_box(self) -> Box2:
+        """Calculates the bounding box of the segment"""
+        box = Box2()
+        box.merge(self.start)
+        box.merge(self.end)
+        return box
 
 class Arc(Shape):
     """Represents a graphic arc (not a track) on a board or footprint"""
@@ -315,6 +334,83 @@ class Arc(Shape):
     def end(self, point: Vector2):
         self._proto.arc.end.CopyFrom(point.proto)
 
+    def center(self) -> Optional[Vector2]:
+        """
+        Calculates the center of the arc.  Uses a different algorithm than KiCad so may have
+        slightly different results.  The KiCad API preserves the start, middle, and end points of
+        the arc, so any other properties such as the center point and angles must be calculated
+
+        :return: The center of the arc, or None if the arc is degenerate
+        """
+        if self.start == self.end:
+            return (self.start + self.mid) * 0.5
+
+        def perpendicular_bisector(p1: Vector2, p2: Vector2):
+            mid_point = (p1 + p2) * 0.5
+            direction = p2 - p1
+            perpendicular_direction = Vector2.from_xy(-direction.y, direction.x)
+            return mid_point, perpendicular_direction
+
+        mid1, dir1 = perpendicular_bisector(self.start, self.mid)
+        mid2, dir2 = perpendicular_bisector(self.mid, self.end)
+
+        det = dir1.x * dir2.y - dir1.y * dir2.x
+
+        if det == 0:
+            return None
+
+        # Intersect the two perpendicular bisectors to find the center
+        t = (mid2.x - mid1.x) * dir2.y - (mid2.y - mid1.y) * dir2.x / det
+        center = mid1 + dir1 * t
+
+        return center
+
+    def radius(self) -> float:
+        """
+        Calculates the radius of the arc.  Uses a different algorithm than KiCad so may have
+        slightly different results.  The KiCad API preserves the start, middle, and end points of
+        the arc, so any other properties such as the center point and angles must be calculated
+
+        :return: The radius of the arc, or 0 if the arc is degenerate
+        """
+        center = self.center()
+        if center is None:
+            return 0
+
+        return (self.start - center).length()
+
+    def start_angle(self) -> Optional[float]:
+        center = self.center()
+        if center is None:
+            return None
+
+        return (self.start - center).angle()
+
+    def end_angle(self) -> Optional[float]:
+        center = self.center()
+        if center is None:
+            return None
+
+        angle = (self.end - center).angle()
+
+        start_angle = self.start_angle()
+        assert(start_angle is not None)
+
+        if angle == self.start_angle():
+            angle += 2 * pi
+
+        while angle < start_angle:
+            angle += 2 * pi
+
+        return angle
+
+    def bounding_box(self) -> Box2:
+        box = Box2()
+        box.merge(self.start)
+        box.merge(self.end)
+        box.merge(self.mid)
+        return box
+
 class Circle(Shape):
     """Represents a graphic circle on a board or footprint"""
     def __init__(self, proto: Optional[board_types_pb2.GraphicShape] = None):
@@ -338,8 +434,19 @@ class Circle(Shape):
         return Vector2(self._proto.circle.radius_point)
 
     @radius_point.setter
-    def radius(self, radius_point: Vector2):
+    def radius_point(self, radius_point: Vector2):
         self._proto.circle.radius_point.CopyFrom(radius_point.proto)
+
+    def radius(self) -> float:
+        """Calculates the radius of the circle"""
+        return (self.radius_point - self.center).length()
+
+    def bounding_box(self) -> Box2:
+        """Calculates the bounding box of the circle"""
+        box = Box2()
+        box.merge(self.center)
+        box.inflate(int(self.radius() + 0.5))
+        return box
 
 class Rectangle(Shape):
     """Represents a graphic rectangle on a board or footprint"""
@@ -367,6 +474,10 @@ class Rectangle(Shape):
     def bottom_right(self, point: Vector2):
         self._proto.rectangle.bottom_right.CopyFrom(point.proto)
 
+    def bounding_box(self) -> Box2:
+        """Calculates the bounding box of the rectangle"""
+        return Box2.from_pos_size(self.top_left, self.bottom_right - self.top_left)
+
 class Polygon(Shape):
     """Represents a graphic polygon on a board or footprint"""
     def __init__(self, proto: Optional[board_types_pb2.GraphicShape] = None):
@@ -385,6 +496,18 @@ class Polygon(Shape):
     def polygons(self, polygons: Sequence[PolygonWithHoles]):
         del self._proto.polygon.polygons[:]
         self._proto.polygon.polygons.extend(polygons)
+
+    def bounding_box(self) -> Box2:
+        """Calculates the bounding box of the polygon"""
+        box = Box2()
+        for polygon in self.polygons:
+            for node in polygon.outline.nodes:
+                if node.arc:
+                    box.merge(Vector2(node.arc.start))
+                    box.merge(Vector2(node.arc.end))
+                else:
+                    box.merge(Vector2(node.point))
+        return box
 
 class Bezier(Shape):
     """Represents a graphic bezier curve on a board or footprint"""
@@ -428,18 +551,25 @@ class Bezier(Shape):
     def end(self, point: Vector2):
         self._proto.bezier.end.CopyFrom(point.proto)
 
+    def bounding_box(self) -> Box2:
+        # TODO: maybe bring in a library for Bezier curve math so we can generate an
+        # bounding box from the curve approximation like KiCad does?
+        raise NotImplementedError()
+
 def to_concrete_shape(
     shape: Shape,
-) -> Union[Segment, Arc, Circle, Rectangle, Polygon, Bezier, Shape]:
-    return {
-        'segment': Segment(shape._proto),
-        'arc': Arc(shape._proto),
-        'circle': Circle(shape._proto),
-        'rectangle': Rectangle(shape._proto),
-        'polygon': Polygon(shape._proto),
-        'bezier': Bezier(shape._proto),
-        None: shape
-    }.get(shape._proto.WhichOneof('geometry'), shape)
+) -> Union[Segment, Arc, Circle, Rectangle, Polygon, Bezier, None]:
+    cls = {
+        'segment': Segment,
+        'arc': Arc,
+        'circle': Circle,
+        'rectangle': Rectangle,
+        'polygon': Polygon,
+        'bezier': Bezier,
+        None: None
+    }.get(shape._proto.WhichOneof('geometry'), None)
+
+    return cls(shape._proto) if cls is not None else None
 
 class Text(BoardItem):
     """Represents a free text object, or the text component of a field"""
@@ -638,6 +768,7 @@ _proto_to_object: Dict[type[Message], type[Wrapper]] = {
     board_types_pb2.Track: Track,
     board_types_pb2.Via: Via,
     board_types_pb2.GraphicShape: Shape,
+    board_types_pb2.Field: Field,
 }
 
 def unwrap(message: Any) -> Wrapper:
