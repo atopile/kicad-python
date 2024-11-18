@@ -23,7 +23,7 @@ from google.protobuf.any_pb2 import Any
 from kipy.proto.common.types import KIID
 from kipy.proto.common.types.base_types_pb2 import LockedState, PolygonWithHoles
 from kipy.proto.board import board_types_pb2
-from kipy.common_types import GraphicAttributes, TextAttributes, LibraryIdentifier
+from kipy.common_types import GraphicAttributes, Text, LibraryIdentifier
 from kipy.geometry import Angle, Box2, Vector2
 from kipy.util import unpack_any
 from kipy.wrapper import Item, Wrapper
@@ -555,7 +555,7 @@ def to_concrete_shape(
 
     return cls(shape._proto) if cls is not None else None
 
-class Text(BoardItem):
+class BoardText(BoardItem):
     """Represents a free text object, or the text component of a field"""
     def __init__(self, proto: Optional[board_types_pb2.Text] = None,
                  proto_ref: Optional[board_types_pb2.Text] = None):
@@ -563,18 +563,6 @@ class Text(BoardItem):
 
         if proto is not None:
             self._proto.CopyFrom(proto)
-
-    @property
-    def id(self) -> KIID:
-        return self._proto.text.id
-
-    @property
-    def position(self) -> Vector2:
-        return Vector2(self._proto.text.position)
-
-    @position.setter
-    def position(self, pos: Vector2):
-        self._proto.text.position.CopyFrom(pos.proto)
 
     @property
     def layer(self) -> BoardLayer.ValueType:
@@ -585,32 +573,8 @@ class Text(BoardItem):
         self._proto.layer = layer
 
     @property
-    def locked(self) -> bool:
-        return self._proto.text.locked == LockedState.LS_LOCKED
-
-    @locked.setter
-    def locked(self, locked: bool):
-        self._proto.text.locked = {
-            True: LockedState.LS_LOCKED,
-            False: LockedState.LS_UNLOCKED,
-        }.get(locked, LockedState.LS_UNLOCKED)
-
-    @property
-    def text(self) -> str:
-        return self._proto.text.text
-
-    @text.setter
-    def text(self, text: str):
-        self._proto.text.text = text
-
-    @property
-    def attributes(self) -> TextAttributes:
-        return TextAttributes(proto_ref=self._proto.text.attributes)
-
-    @attributes.setter
-    def attributes(self, attributes: TextAttributes):
-        self._proto.text.attributes.CopyFrom(attributes.proto)
-
+    def text(self) -> Text:
+        return Text(proto_ref=self._proto.text)
 
 class Field(BoardItem):
     """Represents a footprint field"""
@@ -630,12 +594,16 @@ class Field(BoardItem):
         return self._proto.name
 
     @property
-    def text(self) -> Text:
-        return Text(proto_ref=self._proto.text)
+    def layer(self) -> BoardLayer.ValueType:
+        return self._proto.text.layer
 
-    @text.setter
-    def text(self, text: Text):
-        self._proto.text.CopyFrom(text.proto)
+    @property
+    def board_text(self) -> BoardText:
+        return BoardText(proto_ref=self._proto.text)
+
+    @property
+    def text(self) -> Text:
+        return Text(proto_ref=self._proto.text.text)
 
 class ZoneConnectionSettings(Wrapper):
     def __init__(self, proto: Optional[board_types_pb2.ZoneConnectionSettings] = None,
@@ -1131,7 +1099,7 @@ _proto_to_object: Dict[type[Message], type[Wrapper]] = {
     board_types_pb2.FootprintInstance: FootprintInstance,
     board_types_pb2.Net: Net,
     board_types_pb2.Pad: Pad,
-    board_types_pb2.Text: Text,
+    board_types_pb2.Text: BoardText,
     board_types_pb2.Track: Track,
     board_types_pb2.Via: Via,
     board_types_pb2.GraphicShape: Shape,

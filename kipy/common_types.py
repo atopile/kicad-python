@@ -17,7 +17,8 @@
 
 from typing import Optional
 from kipy.proto.common import types
-from kipy.proto.common.types.base_types_pb2 import KIID
+from kipy.proto.common.types.base_types_pb2 import KIID, LockedState
+from kipy.geometry import Vector2
 from kipy.wrapper import Wrapper
 
 class Commit:
@@ -191,3 +192,51 @@ class GraphicAttributes(Wrapper):
     @property
     def fill(self) -> GraphicFillAttributes:
         return self._fill
+
+class Text(Wrapper):
+    """Common text properties (wrapper for KiCad's EDA_TEXT) shared between board and schematic"""
+    def __init__(self, proto: Optional[types.Text] = None,
+                 proto_ref: Optional[types.Text] = None):
+        self._proto = proto_ref if proto_ref is not None else types.Text()
+
+        if proto is not None:
+            self._proto.CopyFrom(proto)
+
+    @property
+    def id(self) -> KIID:
+        return self._proto.id
+
+    @property
+    def position(self) -> Vector2:
+        return Vector2(self._proto.position)
+
+    @position.setter
+    def position(self, pos: Vector2):
+        self._proto.position.CopyFrom(pos.proto)
+
+    @property
+    def locked(self) -> bool:
+        return self._proto.locked == LockedState.LS_LOCKED
+
+    @locked.setter
+    def locked(self, locked: bool):
+        self._proto.locked = {
+            True: LockedState.LS_LOCKED,
+            False: LockedState.LS_UNLOCKED,
+        }.get(locked, LockedState.LS_UNLOCKED)
+
+    @property
+    def value(self) -> str:
+        return self._proto.text
+
+    @value.setter
+    def value(self, text: str):
+        self._proto.text = text
+
+    @property
+    def attributes(self) -> TextAttributes:
+        return TextAttributes(proto_ref=self._proto.attributes)
+
+    @attributes.setter
+    def attributes(self, attributes: TextAttributes):
+        self._proto.attributes.CopyFrom(attributes.proto)
