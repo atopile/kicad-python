@@ -152,3 +152,48 @@ class Box2:
         self._pos_proto.y_nm -= (new_height - self.size.y) // 2
         self._size_proto.x_nm = new_width
         self._size_proto.y_nm = new_height
+
+class Angle(Wrapper):
+    def __init__(self, proto: Optional[types.Angle] = None):
+        self._proto = types.Angle()
+
+        if proto is not None:
+            self._proto.CopyFrom(proto)
+
+    def __repr__(self):
+        return f"Angle({self.degrees})"
+
+    @classmethod
+    def from_degrees(cls, degrees: float):
+        """Initialize Angle with a value in degrees"""
+        proto = types.Angle()
+        proto.value_degrees = degrees
+        return cls(proto)
+
+    @property
+    def degrees(self) -> float:
+        return self._proto.value_degrees
+
+    @degrees.setter
+    def degrees(self, val: float):
+        self._proto.value_degrees = val
+
+    def __eq__(self, other):
+        if isinstance(other, Angle):
+            return self.degrees == other.degrees
+        return NotImplemented
+
+    def __add__(self, other: Angle) -> Angle:
+        return Angle.from_degrees(self.degrees + other.degrees)
+
+    def __sub__(self, other: Angle) -> Angle:
+        return Angle.from_degrees(self.degrees - other.degrees)
+
+    def __neg__(self) -> Angle:
+        return Angle.from_degrees(-self.degrees)
+
+    def __mul__(self, scalar: float) -> Angle:
+        return Angle.from_degrees(self.degrees * scalar)
+
+    def to_radians(self) -> float:
+        return math.radians(self.degrees)

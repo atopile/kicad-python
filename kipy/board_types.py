@@ -24,14 +24,19 @@ from kipy.proto.common.types import KIID
 from kipy.proto.common.types.base_types_pb2 import LockedState, PolygonWithHoles
 from kipy.proto.board import board_types_pb2
 from kipy.common_types import GraphicAttributes, TextAttributes, LibraryIdentifier
-from kipy.geometry import Box2, Vector2
+from kipy.geometry import Angle, Box2, Vector2
 from kipy.util import unpack_any
 from kipy.wrapper import Item, Wrapper
 
 # Re-exported protobuf enum types
 from kipy.proto.board.board_types_pb2 import ( #noqa
+    BoardLayer,
     PadType,
-    BoardLayer
+    PadStackShape,
+    SolderMaskMode,
+    SolderPasteMode,
+    UnconnectedLayerRemoval,
+    ZoneConnectionStyle
 )
 
 class BoardItem(Item):
@@ -76,11 +81,11 @@ class Track(BoardItem):
         self._proto.net.CopyFrom(net.proto)
 
     @property
-    def layer(self) -> board_types_pb2.BoardLayer.ValueType:
+    def layer(self) -> BoardLayer.ValueType:
         return self._proto.layer
 
     @layer.setter
-    def layer(self, layer: board_types_pb2.BoardLayer.ValueType):
+    def layer(self, layer: BoardLayer.ValueType):
         self._proto.layer = layer
 
     @property
@@ -128,11 +133,11 @@ class ArcTrack(BoardItem):
         self._proto.net.CopyFrom(net.proto)
 
     @property
-    def layer(self) -> board_types_pb2.BoardLayer.ValueType:
+    def layer(self) -> BoardLayer.ValueType:
         return self._proto.layer
 
     @layer.setter
-    def layer(self, layer: board_types_pb2.BoardLayer.ValueType):
+    def layer(self, layer: BoardLayer.ValueType):
         self._proto.layer = layer
 
     @property
@@ -190,33 +195,6 @@ class Via(BoardItem):
     def net(self, net: Net):
         self._proto.net.CopyFrom(net.proto)
 
-class Pad(BoardItem):
-    def __init__(self, proto: Optional[board_types_pb2.Pad] = None):
-        self._proto = board_types_pb2.Pad()
-
-        if proto is not None:
-            self._proto.CopyFrom(proto)
-
-    @property
-    def position(self) -> Vector2:
-        return Vector2(self._proto.position)
-
-    @position.setter
-    def position(self, position: Vector2):
-        self._proto.position.CopyFrom(position.proto)
-
-    @property
-    def net(self) -> Net:
-        return Net(self._proto.net)
-
-    @net.setter
-    def net(self, net: Net):
-        self._proto.net.CopyFrom(net.proto)
-
-    @property
-    def pad_type(self) -> PadType.ValueType:
-        return self._proto.type
-
 class Shape(BoardItem):
     """Represents a graphic shape on a board or footprint"""
     def __init__(self, proto: Optional[board_types_pb2.GraphicShape] = None):
@@ -241,11 +219,11 @@ class Shape(BoardItem):
         }.get(locked, LockedState.LS_UNLOCKED)
 
     @property
-    def layer(self) -> board_types_pb2.BoardLayer.ValueType:
+    def layer(self) -> BoardLayer.ValueType:
         return self._proto.layer
 
     @layer.setter
-    def layer(self, layer: board_types_pb2.BoardLayer.ValueType):
+    def layer(self, layer: BoardLayer.ValueType):
         self._proto.layer = layer
 
     @property
@@ -342,6 +320,8 @@ class Arc(Shape):
 
         :return: The center of the arc, or None if the arc is degenerate
         """
+        # TODO we may want to add an API call to get KiCad to calculate this for us,
+        # for situations where matching KiCad's behavior exactly is important
         if self.start == self.end:
             return (self.start + self.mid) * 0.5
 
@@ -373,6 +353,8 @@ class Arc(Shape):
 
         :return: The radius of the arc, or 0 if the arc is degenerate
         """
+        # TODO we may want to add an API call to get KiCad to calculate this for us,
+        # for situations where matching KiCad's behavior exactly is important
         center = self.center()
         if center is None:
             return 0
@@ -593,11 +575,11 @@ class Text(BoardItem):
         self._proto.text.position.CopyFrom(pos.proto)
 
     @property
-    def layer(self) -> board_types_pb2.BoardLayer.ValueType:
+    def layer(self) -> BoardLayer.ValueType:
         return self._proto.layer
 
     @layer.setter
-    def layer(self, layer: board_types_pb2.BoardLayer.ValueType):
+    def layer(self, layer: BoardLayer.ValueType):
         self._proto.layer = layer
 
     @property
@@ -653,6 +635,347 @@ class Field(BoardItem):
     def text(self, text: Text):
         self._proto.text.CopyFrom(text.proto)
 
+class ZoneConnectionSettings(Wrapper):
+    def __init__(self, proto: Optional[board_types_pb2.ZoneConnectionSettings] = None,
+                 proto_ref: Optional[board_types_pb2.ZoneConnectionSettings] = None):
+        self._proto = (
+            proto_ref
+            if proto_ref is not None
+            else board_types_pb2.ZoneConnectionSettings()
+        )
+
+        if proto is not None:
+            self._proto.CopyFrom(proto)
+
+    @property
+    def zone_connection(self) -> ZoneConnectionStyle.ValueType:
+        return self._proto.zone_connection
+
+    @zone_connection.setter
+    def zone_connection(self, zone_connection: ZoneConnectionStyle.ValueType):
+        self._proto.zone_connection = zone_connection
+
+    @property
+    def thermal_spokes(self) -> board_types_pb2.ThermalSpokeSettings:
+        return self._proto.thermal_spokes
+
+class SolderMaskOverrides(Wrapper):
+    def __init__(self, proto: Optional[board_types_pb2.SolderMaskOverrides] = None,
+                 proto_ref: Optional[board_types_pb2.SolderMaskOverrides] = None):
+        self._proto = proto_ref if proto_ref is not None else board_types_pb2.SolderMaskOverrides()
+
+        if proto is not None:
+            self._proto.CopyFrom(proto)
+
+    @property
+    def solder_mask_margin(self) -> int:
+        return self._proto.solder_mask_margin.value_nm
+
+    @solder_mask_margin.setter
+    def solder_mask_margin(self, margin_nm: int):
+        self._proto.solder_mask_margin.value_nm = margin_nm
+
+class SolderPasteOverrides(Wrapper):
+    def __init__(self, proto: Optional[board_types_pb2.SolderPasteOverrides] = None,
+                 proto_ref: Optional[board_types_pb2.SolderPasteOverrides] = None):
+        self._proto = proto_ref if proto_ref is not None else board_types_pb2.SolderPasteOverrides()
+
+        if proto is not None:
+            self._proto.CopyFrom(proto)
+
+    @property
+    def solder_paste_margin(self) -> int:
+        return self._proto.solder_paste_margin.value_nm
+
+    @solder_paste_margin.setter
+    def solder_paste_margin(self, margin_nm: int):
+        self._proto.solder_paste_margin.value_nm = margin_nm
+
+    @property
+    def solder_paste_margin_ratio(self) -> float:
+        return self._proto.solder_paste_margin_ratio.value
+
+    @solder_paste_margin_ratio.setter
+    def solder_paste_margin_ratio(self, ratio: float):
+        self._proto.solder_paste_margin_ratio.value = ratio
+
+class PadStackLayer(Wrapper):
+    def __init__(self, proto: Optional[board_types_pb2.PadStackLayer] = None,
+                 proto_ref: Optional[board_types_pb2.PadStackLayer] = None):
+        self._proto = proto_ref if proto_ref is not None else board_types_pb2.PadStackLayer()
+
+        if proto is not None:
+            self._proto.CopyFrom(proto)
+
+    @property
+    def layer(self) -> BoardLayer.ValueType:
+        return self._proto.layer
+
+    @layer.setter
+    def layer(self, layer: BoardLayer.ValueType):
+        self._proto.layer = layer
+
+    @property
+    def shape(self) -> PadStackShape.ValueType:
+        return self._proto.shape
+
+    @shape.setter
+    def shape(self, shape: PadStackShape.ValueType):
+        self._proto.shape = shape
+
+    @property
+    def size(self) -> Vector2:
+        return Vector2(self._proto.size)
+
+    @size.setter
+    def size(self, size: Vector2):
+        self._proto.size.CopyFrom(size.proto)
+
+    @property
+    def corner_rounding_ratio(self) -> float:
+        return self._proto.corner_rounding_ratio
+
+    @corner_rounding_ratio.setter
+    def corner_rounding_ratio(self, ratio: float):
+        self._proto.corner_rounding_ratio = ratio
+
+    @property
+    def chamfer_ratio(self) -> float:
+        return self._proto.chamfer_ratio
+
+    @chamfer_ratio.setter
+    def chamfer_ratio(self, ratio: float):
+        self._proto.chamfer_ratio = ratio
+
+    @property
+    def chamfered_corners(self) -> board_types_pb2.ChamferedRectCorners:
+        return self._proto.chamfered_corners
+
+    @property
+    def trapezoid_delta(self) -> Vector2:
+        return Vector2(self._proto.trapezoid_delta)
+
+    @trapezoid_delta.setter
+    def trapezoid_delta(self, delta: Vector2):
+        self._proto.trapezoid_delta.CopyFrom(delta.proto)
+
+    @property
+    def custom_shapes(self) -> Sequence[Shape]:
+        return [
+            item
+            for item in (
+                to_concrete_shape(Shape(shape)) for shape in self._proto.custom_shapes
+            )
+            if item is not None
+        ]
+
+    @custom_shapes.setter
+    def custom_shapes(self, shapes: Sequence[Shape]):
+        del self._proto.custom_shapes[:]
+        self._proto.custom_shapes.extend([shape.proto for shape in shapes])
+
+    @property
+    def custom_anchor_shape(self) -> PadStackShape.ValueType:
+        return self._proto.custom_anchor_shape
+
+    @custom_anchor_shape.setter
+    def custom_anchor_shape(self, shape: PadStackShape.ValueType):
+        self._proto.custom_anchor_shape = shape
+
+    @property
+    def zone_settings(self) -> board_types_pb2.ZoneConnectionSettings:
+        return self._proto.zone_settings
+
+    @zone_settings.setter
+    def zone_settings(self, settings: board_types_pb2.ZoneConnectionSettings):
+        self._proto.zone_settings.CopyFrom(settings)
+
+class DrillProperties(Wrapper):
+    def __init__(self, proto: Optional[board_types_pb2.DrillProperties] = None,
+                 proto_ref: Optional[board_types_pb2.DrillProperties] = None):
+        self._proto = proto_ref if proto_ref is not None else board_types_pb2.DrillProperties()
+
+        if proto is not None:
+            self._proto.CopyFrom(proto)
+
+    @property
+    def start_layer(self) -> BoardLayer.ValueType:
+        return self._proto.start_layer
+
+    @start_layer.setter
+    def start_layer(self, layer: BoardLayer.ValueType):
+        self._proto.start_layer = layer
+
+    @property
+    def end_layer(self) -> BoardLayer.ValueType:
+        return self._proto.end_layer
+
+    @end_layer.setter
+    def end_layer(self, layer: BoardLayer.ValueType):
+        self._proto.end_layer = layer
+
+    @property
+    def diameter(self) -> Vector2:
+        """The drill diameter, which may also be a milled slot with different X and Y dimensions"""
+        return Vector2(self._proto.diameter)
+
+    @diameter.setter
+    def diameter(self, diameter: Vector2):
+        self._proto.diameter.CopyFrom(diameter.proto)
+
+
+class PadStackOuterLayer(Wrapper):
+    def __init__(self, proto: Optional[board_types_pb2.PadStackOuterLayer] = None,
+                 proto_ref: Optional[board_types_pb2.PadStackOuterLayer] = None):
+        self._proto = proto_ref if proto_ref is not None else board_types_pb2.PadStackOuterLayer()
+
+        if proto is not None:
+            self._proto.CopyFrom(proto)
+
+    @property
+    def solder_mask_mode(self) -> board_types_pb2.SolderMaskMode.ValueType:
+        return self._proto.solder_mask_mode
+
+    @solder_mask_mode.setter
+    def solder_mask_mode(self, mode: board_types_pb2.SolderMaskMode.ValueType):
+        self._proto.solder_mask_mode = mode
+
+    @property
+    def solder_paste_mode(self) -> board_types_pb2.SolderPasteMode.ValueType:
+        return self._proto.solder_paste_mode
+
+    @solder_paste_mode.setter
+    def solder_paste_mode(self, mode: board_types_pb2.SolderPasteMode.ValueType):
+        self._proto.solder_paste_mode = mode
+
+    @property
+    def solder_mask_settings(self) -> SolderMaskOverrides:
+        return SolderMaskOverrides(proto_ref=self._proto.solder_mask_settings)
+
+    @solder_mask_settings.setter
+    def solder_mask_settings(self, settings: SolderMaskOverrides):
+        self._proto.solder_mask_settings.CopyFrom(settings.proto)
+
+    @property
+    def solder_paste_settings(self) -> SolderPasteOverrides:
+        return SolderPasteOverrides(proto_ref=self._proto.solder_paste_settings)
+
+    @solder_paste_settings.setter
+    def solder_paste_settings(self, settings: SolderPasteOverrides):
+        self._proto.solder_paste_settings.CopyFrom(settings.proto)
+
+class PadStack(BoardItem):
+    def __init__(self, proto: Optional[board_types_pb2.PadStack] = None,
+                 proto_ref: Optional[board_types_pb2.PadStack] = None):
+        self._proto = proto_ref if proto_ref is not None else board_types_pb2.PadStack()
+
+        if proto is not None:
+            self._proto.CopyFrom(proto)
+
+    @property
+    def type(self) -> board_types_pb2.PadStackType.ValueType:
+        return self._proto.type
+
+    @type.setter
+    def type(self, type: board_types_pb2.PadStackType.ValueType):
+        self._proto.type = type
+
+    @property
+    def layers(self) -> Sequence[BoardLayer.ValueType]:
+        return self._proto.layers
+
+    @layers.setter
+    def layers(self, layers: Sequence[BoardLayer.ValueType]):
+        del self._proto.layers[:]
+        self._proto.layers.extend(layers)
+
+    @property
+    def drill(self) -> board_types_pb2.DrillProperties:
+        return self._proto.drill
+
+    @drill.setter
+    def drill(self, drill: board_types_pb2.DrillProperties):
+        self._proto.drill.CopyFrom(drill)
+
+    @property
+    def unconnected_layer_removal(self) -> UnconnectedLayerRemoval.ValueType:
+        return self._proto.unconnected_layer_removal
+
+    @unconnected_layer_removal.setter
+    def unconnected_layer_removal(self, removal: UnconnectedLayerRemoval.ValueType):
+        self._proto.unconnected_layer_removal = removal
+
+    @property
+    def copper_layers(self) -> Sequence[board_types_pb2.PadStackLayer]:
+        return self._proto.copper_layers
+
+    @copper_layers.setter
+    def copper_layers(self, layers: Sequence[board_types_pb2.PadStackLayer]):
+        del self._proto.copper_layers[:]
+        self._proto.copper_layers.extend(layers)
+
+    @property
+    def angle(self) -> Angle:
+        return Angle(self._proto.angle)
+
+    @angle.setter
+    def angle(self, angle: Angle):
+        self._proto.angle.CopyFrom(angle.proto)
+
+    @property
+    def front_outer_layers(self) -> PadStackOuterLayer:
+        return PadStackOuterLayer(proto_ref=self._proto.front_outer_layers)
+
+    @property
+    def back_outer_layers(self) -> PadStackOuterLayer:
+        return PadStackOuterLayer(proto_ref=self._proto.back_outer_layers)
+
+    @property
+    def zone_settings(self) -> ZoneConnectionSettings:
+        return ZoneConnectionSettings(proto_ref=self._proto.zone_settings)
+
+class Pad(BoardItem):
+    def __init__(self, proto: Optional[board_types_pb2.Pad] = None):
+        self._proto = board_types_pb2.Pad()
+
+        if proto is not None:
+            self._proto.CopyFrom(proto)
+
+    @property
+    def id(self) -> KIID:
+        return self._proto.id
+
+    @property
+    def number(self) -> str:
+        return self._proto.number
+
+    @number.setter
+    def number(self, number: str):
+        self._proto.number = number
+
+    @property
+    def position(self) -> Vector2:
+        return Vector2(self._proto.position)
+
+    @position.setter
+    def position(self, position: Vector2):
+        self._proto.position.CopyFrom(position.proto)
+
+    @property
+    def net(self) -> Net:
+        return Net(self._proto.net)
+
+    @net.setter
+    def net(self, net: Net):
+        self._proto.net.CopyFrom(net.proto)
+
+    @property
+    def pad_type(self) -> PadType.ValueType:
+        return self._proto.type
+
+    @property
+    def padstack(self) -> PadStack:
+        return PadStack(proto_ref=self._proto.pad_stack)
 
 class FootprintAttributes(Wrapper):
     """The built-in attributes that a Footprint or FootprintInstance may have"""
@@ -709,12 +1032,15 @@ class Footprint(Wrapper):
         return [unwrap(item) for item in self._proto.items]
 
     def pads(self) -> Sequence[Pad]:
+        """Returns all pads in the footprint"""
         return [item for item in self.items if isinstance(item, Pad)]
 
     def shapes(self) -> Sequence[Shape]:
+        """Returns all graphic shapes in the footprint"""
         return [item for item in self.items if isinstance(item, Shape)]
 
     def texts(self) -> Sequence[Text]:
+        """Returns al free text objects in the footprint"""
         return [item for item in self.items if isinstance(item, Text)]
 
     def add_item(self, item: Wrapper):
@@ -735,6 +1061,22 @@ class FootprintInstance(BoardItem):
         return self._proto.id
 
     @property
+    def position(self) -> Vector2:
+        return Vector2(self._proto.position)
+
+    @position.setter
+    def position(self, position: Vector2):
+        self._proto.position.CopyFrom(position.proto)
+
+    @property
+    def orientation(self) -> Angle:
+        return Angle(self._proto.orientation)
+
+    @orientation.setter
+    def orientation(self, orientation: Angle):
+        self._proto.orientation.CopyFrom(orientation.proto)
+
+    @property
     def layer(self) -> BoardLayer.ValueType:
         """The layer on which the footprint is placed (BoardLayer.BL_F_Cu or BoardLayer.BL_B_Cu)"""
         return self._proto.layer
@@ -742,6 +1084,14 @@ class FootprintInstance(BoardItem):
     @layer.setter
     def layer(self, layer: BoardLayer.ValueType):
         self._proto.layer = layer
+
+    @property
+    def locked(self) -> bool:
+        return self._proto.locked == LockedState.LS_LOCKED
+
+    @locked.setter
+    def locked(self, locked: bool):
+        self._proto.locked = LockedState.LS_LOCKED if locked else LockedState.LS_UNLOCKED
 
     @property
     def definition(self) -> Footprint:
@@ -754,6 +1104,14 @@ class FootprintInstance(BoardItem):
     @property
     def value_field(self) -> Field:
         return Field(proto_ref=self._proto.value_field)
+
+    @property
+    def datasheet_field(self) -> Field:
+        return Field(proto_ref=self._proto.datasheet_field)
+
+    @property
+    def description_field(self) -> Field:
+        return Field(proto_ref=self._proto.description_field)
 
     @property
     def attributes(self) -> FootprintAttributes:
