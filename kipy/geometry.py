@@ -388,3 +388,21 @@ class PolygonWithHoles(Wrapper):
         return Box2.from_pos_size(
             Vector2.from_xy(min_x, min_y), Vector2.from_xy(max_x - min_x, max_y - min_y)
         )
+
+    def move(self, delta: Vector2):
+        for node in self.outline:
+            if node.has_point:
+                node.point += delta
+            elif node.has_arc:
+                node.arc.start += delta
+                node.arc.mid += delta
+                node.arc.end += delta
+
+        for hole in self.holes:
+            for node in hole:
+                if node.has_point:
+                    node.point += delta
+                elif node.has_arc:
+                    node.arc.start += delta
+                    node.arc.mid += delta
+                    node.arc.end += delta

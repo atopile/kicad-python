@@ -16,7 +16,7 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from time import sleep
-from typing import List, Dict, Union, Iterable, Optional, Sequence, cast
+from typing import List, Dict, Union, Iterable, Optional, Sequence, cast, overload
 from google.protobuf.empty_pb2 import Empty
 
 from kipy.board_types import (
@@ -34,7 +34,7 @@ from kipy.board_types import (
 )
 from kipy.client import ApiError, KiCadClient
 from kipy.common_types import Commit, TextAttributes
-from kipy.geometry import Box2, Vector2
+from kipy.geometry import Box2, PolygonWithHoles, Vector2
 from kipy.proto.common.envelope_pb2 import ApiStatusCode
 from kipy.util import pack_any
 from kipy.wrapper import Item, Wrapper
@@ -252,6 +252,40 @@ class Board:
         cmd.text.CopyFrom(text.proto)
         reply = self._kicad.send(cmd, BoundingBoxResponse)
         return Box2(reply.position, reply.size)
+
+    @overload
+    def get_pad_shapes_as_polygons(
+        self, pads: Pad, layer: BoardLayer.ValueType = BoardLayer.BL_F_Cu
+    ) -> Optional[PolygonWithHoles]: ...
+
+    @overload
+    def get_pad_shapes_as_polygons(
+        self, pads: Sequence[Pad], layer: BoardLayer.ValueType = BoardLayer.BL_F_Cu
+    ) -> List[Optional[PolygonWithHoles]]: ...
+
+    def get_pad_shapes_as_polygons(
+        self, pads: Union[Pad, Sequence[Pad]], layer: BoardLayer.ValueType = BoardLayer.BL_F_Cu
+    ) -> Union[Optional[PolygonWithHoles], List[Optional[PolygonWithHoles]]]:
+        cmd = board_commands_pb2.GetPadShapeAsPolygon()
+        cmd.board.CopyFrom(self._doc)
+        cmd.layer = layer
+
+        if isinstance(pads, Pad):
+            cmd.pads.append(pads.id)
+        else:
+            cmd.pads.extend([pad.id for pad in pads])
+
+        response = self._kicad.send(cmd, board_commands_pb2.PadShapeAsPolygonResponse)
+
+        if isinstance(pads, Pad):
+            return PolygonWithHoles(response.polygons[0]) if len(response.polygons) == 1 else None
+
+        pad_to_polygon = {pad: polygon for pad, polygon in zip(response.pads, response.polygons)}
+        return [
+            PolygonWithHoles(p)
+            for p in (pad_to_polygon.get(pad.id, None) for pad in pads)
+            if p is not None
+        ]
 
     def interactive_move(self, items: Union[KIID, Iterable[KIID]]):
         cmd = board_commands_pb2.InteractiveMoveItems()
