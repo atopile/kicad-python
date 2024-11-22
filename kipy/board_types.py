@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from math import pi
 from typing import Dict, Sequence, Optional, Union
 from google.protobuf.message import Message
 from google.protobuf.any_pb2 import Any
@@ -24,7 +23,16 @@ from kipy.proto.common.types import KIID
 from kipy.proto.common.types.base_types_pb2 import LockedState
 from kipy.proto.board import board_types_pb2
 from kipy.common_types import GraphicAttributes, Text, LibraryIdentifier
-from kipy.geometry import Angle, Box2, Vector2, PolygonWithHoles
+from kipy.geometry import (
+    Angle,
+    Box2,
+    Vector2,
+    PolygonWithHoles,
+    arc_center,
+    arc_radius,
+    arc_start_angle,
+    arc_end_angle,
+)
 from kipy.util import unpack_any
 from kipy.wrapper import Item, Wrapper
 
@@ -38,7 +46,8 @@ from kipy.proto.board.board_types_pb2 import ( #noqa
     SolderMaskMode,
     SolderPasteMode,
     UnconnectedLayerRemoval,
-    ZoneConnectionStyle
+    ZoneConnectionStyle,
+    ViaType
 )
 
 class BoardItem(Item):
@@ -174,28 +183,42 @@ class ArcTrack(BoardItem):
     def mid(self, point: Vector2):
         self._proto.mid.CopyFrom(point.proto)
 
-class Via(BoardItem):
-    def __init__(self, proto: Optional[board_types_pb2.Via] = None):
-        self._proto = board_types_pb2.Via()
+    def center(self) -> Optional[Vector2]:
+        """
+        Calculates the center of the arc.  Uses a different algorithm than KiCad so may have
+        slightly different results.  The KiCad API preserves the start, middle, and end points of
+        the arc, so any other properties such as the center point and angles must be calculated
 
-        if proto is not None:
-            self._proto.CopyFrom(proto)
+        :return: The center of the arc, or None if the arc is degenerate
+        """
+        # TODO we may want to add an API call to get KiCad to calculate this for us,
+        # for situations where matching KiCad's behavior exactly is important
+        return arc_center(self.start, self.mid, self.end)
 
-    @property
-    def position(self) -> Vector2:
-        return Vector2(self._proto.position)
+    def radius(self) -> float:
+        """
+        Calculates the radius of the arc.  Uses a different algorithm than KiCad so may have
+        slightly different results.  The KiCad API preserves the start, middle, and end points of
+        the arc, so any other properties such as the center point and angles must be calculated
 
-    @position.setter
-    def position(self, position: Vector2):
-        self._proto.position.CopyFrom(position.proto)
+        :return: The radius of the arc, or 0 if the arc is degenerate
+        """
+        # TODO we may want to add an API call to get KiCad to calculate this for us,
+        # for situations where matching KiCad's behavior exactly is important
+        return arc_radius(self.start, self.mid, self.end)
 
-    @property
-    def net(self) -> Net:
-        return Net(self._proto.net)
+    def start_angle(self) -> Optional[float]:
+        return arc_start_angle(self.start, self.mid, self.end)
 
-    @net.setter
-    def net(self, net: Net):
-        self._proto.net.CopyFrom(net.proto)
+    def end_angle(self) -> Optional[float]:
+        return arc_end_angle(self.start, self.mid, self.end)
+
+    def bounding_box(self) -> Box2:
+        box = Box2()
+        box.merge(self.start)
+        box.merge(self.end)
+        box.merge(self.mid)
+        return box
 
 class Shape(BoardItem):
     """Represents a graphic shape on a board or footprint"""
@@ -324,28 +347,7 @@ class Arc(Shape):
         """
         # TODO we may want to add an API call to get KiCad to calculate this for us,
         # for situations where matching KiCad's behavior exactly is important
-        if self.start == self.end:
-            return (self.start + self.mid) * 0.5
-
-        def perpendicular_bisector(p1: Vector2, p2: Vector2):
-            mid_point = (p1 + p2) * 0.5
-            direction = p2 - p1
-            perpendicular_direction = Vector2.from_xy(-direction.y, direction.x)
-            return mid_point, perpendicular_direction
-
-        mid1, dir1 = perpendicular_bisector(self.start, self.mid)
-        mid2, dir2 = perpendicular_bisector(self.mid, self.end)
-
-        det = dir1.x * dir2.y - dir1.y * dir2.x
-
-        if det == 0:
-            return None
-
-        # Intersect the two perpendicular bisectors to find the center
-        t = (mid2.x - mid1.x) * dir2.y - (mid2.y - mid1.y) * dir2.x / det
-        center = mid1 + dir1 * t
-
-        return center
+        return arc_center(self.start, self.mid, self.end)
 
     def radius(self) -> float:
         """
@@ -357,36 +359,13 @@ class Arc(Shape):
         """
         # TODO we may want to add an API call to get KiCad to calculate this for us,
         # for situations where matching KiCad's behavior exactly is important
-        center = self.center()
-        if center is None:
-            return 0
-
-        return (self.start - center).length()
+        return arc_radius(self.start, self.mid, self.end)
 
     def start_angle(self) -> Optional[float]:
-        center = self.center()
-        if center is None:
-            return None
-
-        return (self.start - center).angle()
+        return arc_start_angle(self.start, self.mid, self.end)
 
     def end_angle(self) -> Optional[float]:
-        center = self.center()
-        if center is None:
-            return None
-
-        angle = (self.end - center).angle()
-
-        start_angle = self.start_angle()
-        assert(start_angle is not None)
-
-        if angle == self.start_angle():
-            angle += 2 * pi
-
-        while angle < start_angle:
-            angle += 2 * pi
-
-        return angle
+        return arc_end_angle(self.start, self.mid, self.end)
 
     def bounding_box(self) -> Box2:
         box = Box2()
@@ -884,6 +863,12 @@ class PadStack(BoardItem):
     def copper_layers(self) -> list[PadStackLayer]:
         return [PadStackLayer(proto_ref=p) for p in self._proto.copper_layers]
 
+    def copper_layer(self, layer: BoardLayer.ValueType) -> Optional[PadStackLayer]:
+        for copper_layer in self.copper_layers:
+            if copper_layer.layer == layer:
+                return copper_layer
+        return None
+
     @property
     def angle(self) -> Angle:
         return Angle(self._proto.angle)
@@ -903,6 +888,22 @@ class PadStack(BoardItem):
     @property
     def zone_settings(self) -> ZoneConnectionSettings:
         return ZoneConnectionSettings(proto_ref=self._proto.zone_settings)
+
+    def is_masked(self, layer: BoardLayer.ValueType = BoardLayer.BL_UNDEFINED) -> bool:
+        """
+        Returns true if the padstack is masked on the given copper layer, or on either layer if
+        layer is BL_UNDEFINED.
+        """
+        if layer == BoardLayer.BL_UNDEFINED:
+            return (
+            self.front_outer_layers.solder_mask_mode == SolderMaskMode.SMM_MASKED or
+            self.back_outer_layers.solder_mask_mode == SolderMaskMode.SMM_MASKED
+            )
+        elif layer == BoardLayer.BL_F_Cu:
+            return self.front_outer_layers.solder_mask_mode == SolderMaskMode.SMM_MASKED
+        elif layer == BoardLayer.BL_B_Cu:
+            return self.back_outer_layers.solder_mask_mode == SolderMaskMode.SMM_MASKED
+        return False
 
 class Pad(BoardItem):
     def __init__(self, proto: Optional[board_types_pb2.Pad] = None):
@@ -942,6 +943,49 @@ class Pad(BoardItem):
     @property
     def pad_type(self) -> PadType.ValueType:
         return self._proto.type
+
+    @property
+    def padstack(self) -> PadStack:
+        return PadStack(proto_ref=self._proto.pad_stack)
+
+class Via(BoardItem):
+    def __init__(self, proto: Optional[board_types_pb2.Via] = None):
+        self._proto = board_types_pb2.Via()
+
+        if proto is not None:
+            self._proto.CopyFrom(proto)
+
+    @property
+    def position(self) -> Vector2:
+        return Vector2(self._proto.position)
+
+    @position.setter
+    def position(self, position: Vector2):
+        self._proto.position.CopyFrom(position.proto)
+
+    @property
+    def net(self) -> Net:
+        return Net(self._proto.net)
+
+    @net.setter
+    def net(self, net: Net):
+        self._proto.net.CopyFrom(net.proto)
+
+    @property
+    def locked(self) -> bool:
+        return self._proto.locked == LockedState.LS_LOCKED
+
+    @locked.setter
+    def locked(self, locked: bool):
+        self._proto.locked = LockedState.LS_LOCKED if locked else LockedState.LS_UNLOCKED
+
+    @property
+    def type(self) -> ViaType.ValueType:
+        return self._proto.type
+
+    @type.setter
+    def type(self, type: ViaType.ValueType):
+        self._proto.type = type
 
     @property
     def padstack(self) -> PadStack:

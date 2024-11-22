@@ -244,6 +244,36 @@ class ArcStartMidEnd(Wrapper):
     def end(self, val: Vector2):
         self._proto.end.CopyFrom(val._proto)
 
+    def center(self) -> Optional[Vector2]:
+        """
+        Calculates the center of the arc.  Uses a different algorithm than KiCad so may have
+        slightly different results.  The KiCad API preserves the start, middle, and end points of
+        the arc, so any other properties such as the center point and angles must be calculated
+
+        :return: The center of the arc, or None if the arc is degenerate
+        """
+        # TODO we may want to add an API call to get KiCad to calculate this for us,
+        # for situations where matching KiCad's behavior exactly is important
+        return arc_center(self.start, self.mid, self.end)
+
+    def radius(self) -> float:
+        """
+        Calculates the radius of the arc.  Uses a different algorithm than KiCad so may have
+        slightly different results.  The KiCad API preserves the start, middle, and end points of
+        the arc, so any other properties such as the center point and angles must be calculated
+
+        :return: The radius of the arc, or 0 if the arc is degenerate
+        """
+        # TODO we may want to add an API call to get KiCad to calculate this for us,
+        # for situations where matching KiCad's behavior exactly is important
+        return arc_radius(self.start, self.mid, self.end)
+
+    def start_angle(self) -> Optional[float]:
+        return arc_start_angle(self.start, self.mid, self.end)
+
+    def end_angle(self) -> Optional[float]:
+        return arc_end_angle(self.start, self.mid, self.end)
+
     def bounding_box(self) -> Box2:
         """Returns the bounding box of the arc -- not calculated by KiCad; may differ from KiCad's"""
         box = Box2()
@@ -415,3 +445,77 @@ class PolygonWithHoles(Wrapper):
                     node.arc.start += delta
                     node.arc.mid += delta
                     node.arc.end += delta
+
+def arc_center(start: Vector2, mid: Vector2, end: Vector2) -> Optional[Vector2]:
+    """
+    Calculates the center of the arc.  Uses a different algorithm than KiCad so may have
+    slightly different results.  The KiCad API preserves the start, middle, and end points of
+    the arc, so any other properties such as the center point and angles must be calculated
+
+    :return: The center of the arc, or None if the arc is degenerate
+    """
+    # TODO we may want to add an API call to get KiCad to calculate this for us,
+    # for situations where matching KiCad's behavior exactly is important
+    if start == end:
+        return (start + mid) * 0.5
+
+    def perpendicular_bisector(p1: Vector2, p2: Vector2):
+        mid_point = (p1 + p2) * 0.5
+        direction = p2 - p1
+        perpendicular_direction = Vector2.from_xy(-direction.y, direction.x)
+        return mid_point, perpendicular_direction
+
+    mid1, dir1 = perpendicular_bisector(start, mid)
+    mid2, dir2 = perpendicular_bisector(mid, end)
+
+    det = dir1.x * dir2.y - dir1.y * dir2.x
+
+    if det == 0:
+        return None
+
+    # Intersect the two perpendicular bisectors to find the center
+    t = (mid2.x - mid1.x) * dir2.y - (mid2.y - mid1.y) * dir2.x / det
+    center = mid1 + dir1 * t
+
+    return center
+
+def arc_radius(start: Vector2, mid: Vector2, end: Vector2) -> float:
+    """
+    Calculates the radius of the arc.  Uses a different algorithm than KiCad so may have
+    slightly different results.  The KiCad API preserves the start, middle, and end points of
+    the arc, so any other properties such as the center point and angles must be calculated
+
+    :return: The radius of the arc, or 0 if the arc is degenerate
+    """
+    # TODO we may want to add an API call to get KiCad to calculate this for us,
+    # for situations where matching KiCad's behavior exactly is important
+    center = arc_center(start, mid, end)
+    if center is None:
+        return 0
+
+    return (start - center).length()
+
+def arc_start_angle(start: Vector2, mid: Vector2, end: Vector2) -> Optional[float]:
+    center = arc_center(start, mid, end)
+    if center is None:
+        return None
+
+    return (start - center).angle()
+
+def arc_end_angle(start: Vector2, mid: Vector2, end: Vector2) -> Optional[float]:
+    center = arc_center(start, mid, end)
+    if center is None:
+        return None
+
+    angle = (end - center).angle()
+
+    start_angle = arc_start_angle(start, mid, end)
+    assert(start_angle is not None)
+
+    if angle == start_angle:
+        angle += 2 * math.pi
+
+    while angle < start_angle:
+        angle += 2 * math.pi
+
+    return angle
