@@ -30,7 +30,7 @@ _any_urls = {
     "type.googleapis.com/kiapi.board.types.Arc": board_types_pb2.Arc,
     "type.googleapis.com/kiapi.board.types.Via": board_types_pb2.Via,
     "type.googleapis.com/kiapi.board.types.Text": board_types_pb2.Text,
-    #"type.googleapis.com/kiapi.board.types.TextBox": board_types_pb2.TextBox,
+    "type.googleapis.com/kiapi.board.types.TextBox": board_types_pb2.TextBox,
     "type.googleapis.com/kiapi.board.types.GraphicShape": board_types_pb2.GraphicShape,
     "type.googleapis.com/kiapi.board.types.Pad": board_types_pb2.Pad,
     "type.googleapis.com/kiapi.board.types.Zone": board_types_pb2.Zone,
@@ -38,17 +38,18 @@ _any_urls = {
     "type.googleapis.com/kiapi.board.types.ReferenceImage": board_types_pb2.ReferenceImage,
     "type.googleapis.com/kiapi.board.types.Group": board_types_pb2.Group,
     "type.googleapis.com/kiapi.board.types.Field": board_types_pb2.Field,
-    "type.googleapis.com/kiapi.board.types.FootprintInstance": board_types_pb2.FootprintInstance
+    "type.googleapis.com/kiapi.board.types.FootprintInstance": board_types_pb2.FootprintInstance,
+    "type.googleapis.com/kiapi.board.types.Footprint3DModel": board_types_pb2.Footprint3DModel
 }
 
 def unpack_any(object: Any) -> Message:
     if len(object.type_url) == 0:
         raise ValueError("Can't unpack empty Any protobuf message")
-    
+
     type = _any_urls.get(object.type_url, None)
     if type is None:
         raise NotImplementedError(f"{object.type_url} can't be unpacked")
-  
+
     concrete = type()
     object.Unpack(concrete)
     return concrete

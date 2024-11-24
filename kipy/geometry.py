@@ -95,6 +95,89 @@ class Vector2(Wrapper):
     def angle(self) -> float:
         return math.atan2(self.y, self.x)
 
+class Vector3D(Wrapper):
+    """Wraps a kiapi.common.types.Vector3D"""
+    def __init__(self, proto: Optional[types.Vector3D] = None):
+        self._proto = types.Vector3D()
+
+        if proto is not None:
+            self._proto.CopyFrom(proto)
+
+    def __repr__(self):
+        return f"Vector3D({self.x}, {self.y}, {self.z})"
+
+    @classmethod
+    def from_xyz(cls, x_nm: float, y_nm: float, z_nm: float):
+        """Initialize Vector3D with x, y, and z values in nanometers"""
+        proto = types.Vector3D()
+        proto.x_nm = x_nm
+        proto.y_nm = y_nm
+        proto.z_nm = z_nm
+        return cls(proto)
+
+    @property
+    def x(self) -> float:
+        return self._proto.x_nm
+
+    @x.setter
+    def x(self, val: float):
+        self._proto.x_nm = val
+
+    @property
+    def y(self) -> float:
+        return self._proto.y_nm
+
+    @y.setter
+    def y(self, val: float):
+        self._proto.y_nm = val
+
+    @property
+    def z(self) -> float:
+        return self._proto.z_nm
+
+    @z.setter
+    def z(self, val: float):
+        self._proto.z_nm = val
+
+    def __hash__(self):
+        return hash((self.x, self.y, self.z))
+
+    def __eq__(self, other):
+        if isinstance(other, Vector3D):
+            return self.x == other.x and self.y == other.y and self.z == other.z
+        return NotImplemented
+
+    def __add__(self, other: Vector3D) -> Vector3D:
+        r = Vector3D(self._proto)
+        r.x += other.x
+        r.y += other.y
+        r.z += other.z
+        return r
+
+    def __sub__(self, other: Vector3D) -> Vector3D:
+        r = Vector3D(self._proto)
+        r.x -= other.x
+        r.y -= other.y
+        r.z -= other.z
+        return r
+
+    def __neg__(self) -> Vector3D:
+        r = Vector3D(self._proto)
+        r.x = -r.x
+        r.y = -r.y
+        r.z = -r.z
+        return r
+
+    def __mul__(self, scalar: float) -> Vector3D:
+        r = Vector3D(self._proto)
+        r.x = r.x * scalar
+        r.y = r.y * scalar
+        r.z = r.z * scalar
+        return r
+
+    def length(self) -> float:
+        return math.sqrt(self.x * self.x + self.y * self.y + self.z * self.z)
+
 class Box2:
     def __init__(
         self,

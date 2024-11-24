@@ -21,6 +21,12 @@ from kipy.proto.common.types.base_types_pb2 import KIID, LockedState
 from kipy.geometry import Vector2
 from kipy.wrapper import Wrapper
 
+# Re-exported protobuf enum types
+from kipy.proto.common.types.enums_pb2 import (  # noqa
+    HorizontalAlignment,
+    VerticalAlignment,
+)
+
 class Commit:
     def __init__(self, id: KIID):
         self._id = id
@@ -84,6 +90,110 @@ class TextAttributes(Wrapper):
     @visible.setter
     def visible(self, visible: bool):
         self._proto.visible = visible
+
+    @property
+    def font_name(self) -> str:
+        return self._proto.font_name
+
+    @font_name.setter
+    def font_name(self, font_name: str):
+        self._proto.font_name = font_name
+
+    @property
+    def angle(self) -> types.Angle:
+        return self._proto.angle
+
+    @angle.setter
+    def angle(self, angle: types.Angle):
+        self._proto.angle.CopyFrom(angle)
+
+    @property
+    def line_spacing(self) -> float:
+        return self._proto.line_spacing
+
+    @line_spacing.setter
+    def line_spacing(self, line_spacing: float):
+        self._proto.line_spacing = line_spacing
+
+    @property
+    def stroke_width(self) -> types.Distance:
+        return self._proto.stroke_width
+
+    @stroke_width.setter
+    def stroke_width(self, stroke_width: types.Distance):
+        self._proto.stroke_width.CopyFrom(stroke_width)
+
+    @property
+    def italic(self) -> bool:
+        return self._proto.italic
+
+    @italic.setter
+    def italic(self, italic: bool):
+        self._proto.italic = italic
+
+    @property
+    def bold(self) -> bool:
+        return self._proto.bold
+
+    @bold.setter
+    def bold(self, bold: bool):
+        self._proto.bold = bold
+
+    @property
+    def underlined(self) -> bool:
+        return self._proto.underlined
+
+    @underlined.setter
+    def underlined(self, underlined: bool):
+        self._proto.underlined = underlined
+
+    @property
+    def mirrored(self) -> bool:
+        return self._proto.mirrored
+
+    @mirrored.setter
+    def mirrored(self, mirrored: bool):
+        self._proto.mirrored = mirrored
+
+    @property
+    def multiline(self) -> bool:
+        return self._proto.multiline
+
+    @multiline.setter
+    def multiline(self, multiline: bool):
+        self._proto.multiline = multiline
+
+    @property
+    def keep_upright(self) -> bool:
+        return self._proto.keep_upright
+
+    @keep_upright.setter
+    def keep_upright(self, keep_upright: bool):
+        self._proto.keep_upright = keep_upright
+
+    @property
+    def size(self) -> Vector2:
+        return Vector2(self._proto.size)
+
+    @size.setter
+    def size(self, size: Vector2):
+        self._proto.size.CopyFrom(size.proto)
+
+    @property
+    def horizontal_alignment(self) -> types.HorizontalAlignment.ValueType:
+        return self._proto.horizontal_alignment
+
+    @horizontal_alignment.setter
+    def horizontal_alignment(self, alignment: types.HorizontalAlignment.ValueType):
+        self._proto.horizontal_alignment = alignment
+
+    @property
+    def vertical_alignment(self) -> types.VerticalAlignment.ValueType:
+        return self._proto.vertical_alignment
+
+    @vertical_alignment.setter
+    def vertical_alignment(self, alignment: types.VerticalAlignment.ValueType):
+        self._proto.vertical_alignment = alignment
 
 class LibraryIdentifier(Wrapper):
     """A KiCad library identifier (LIB_ID), consisting of a library nickname and entry name"""

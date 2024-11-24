@@ -23,11 +23,12 @@ from kipy.proto.common.types import KIID
 from kipy.proto.common.types import base_types_pb2
 from kipy.proto.common.types.base_types_pb2 import LockedState
 from kipy.proto.board import board_types_pb2
-from kipy.common_types import GraphicAttributes, Text, TextAttributes, LibraryIdentifier
+from kipy.common_types import GraphicAttributes, TextAttributes, LibraryIdentifier
 from kipy.geometry import (
     Angle,
     Box2,
     Vector2,
+    Vector3D,
     PolygonWithHoles,
     arc_center,
     arc_radius,
@@ -579,9 +580,43 @@ class BoardText(BoardItem):
         self._proto.layer = layer
 
     @property
-    def text(self) -> Text:
-        return Text(proto_ref=self._proto.text)
+    def id(self) -> KIID:
+        return self._proto.text.id
 
+    @property
+    def position(self) -> Vector2:
+        return Vector2(self._proto.text.position)
+
+    @position.setter
+    def position(self, pos: Vector2):
+        self._proto.text.position.CopyFrom(pos.proto)
+
+    @property
+    def locked(self) -> bool:
+        return self._proto.text.locked == LockedState.LS_LOCKED
+
+    @locked.setter
+    def locked(self, locked: bool):
+        self._proto.text.locked = {
+            True: LockedState.LS_LOCKED,
+            False: LockedState.LS_UNLOCKED,
+        }.get(locked, LockedState.LS_UNLOCKED)
+
+    @property
+    def value(self) -> str:
+        return self._proto.text.text
+
+    @value.setter
+    def value(self, text: str):
+        self._proto.text.text = text
+
+    @property
+    def attributes(self) -> TextAttributes:
+        return TextAttributes(proto_ref=self._proto.text.attributes)
+
+    @attributes.setter
+    def attributes(self, attributes: TextAttributes):
+        self._proto.text.attributes.CopyFrom(attributes.proto)
 
 class BoardTextBox(BoardItem):
     """Represents a text box on a board"""
@@ -601,11 +636,22 @@ class BoardTextBox(BoardItem):
         self._proto.layer = layer
 
     @property
-    def text(self) -> str:
+    def locked(self) -> bool:
+        return self._proto.textbox.locked == LockedState.LS_LOCKED
+
+    @locked.setter
+    def locked(self, locked: bool):
+        self._proto.textbox.locked = {
+            True: LockedState.LS_LOCKED,
+            False: LockedState.LS_UNLOCKED,
+        }.get(locked, LockedState.LS_UNLOCKED)
+
+    @property
+    def value(self) -> str:
         return self._proto.textbox.text
 
-    @text.setter
-    def text(self, text: str):
+    @value.setter
+    def value(self, text: str):
         self._proto.textbox.text = text
 
     @property
@@ -668,13 +714,12 @@ class Field(BoardItem):
         return self._proto.text.layer
 
     @property
-    def board_text(self) -> BoardText:
+    def text(self) -> BoardText:
         return BoardText(proto_ref=self._proto.text)
 
-    @property
-    def text(self) -> Text:
-        return Text(proto_ref=self._proto.text.text)
-
+    @text.setter
+    def text(self, text: BoardText):
+        self._proto.text.CopyFrom(text.proto)
 
 class ZoneConnectionSettings(Wrapper):
     def __init__(
@@ -1176,6 +1221,62 @@ class FootprintAttributes(Wrapper):
     def exclude_from_position_files(self, exclude: bool):
         self._proto.exclude_from_position_files = exclude
 
+class Footprint3DModel(Wrapper):
+    """Represents a 3D model associated with a footprint"""
+
+    def __init__(self, proto: Optional[board_types_pb2.Footprint3DModel] = None):
+        self._proto = board_types_pb2.Footprint3DModel()
+
+        if proto is not None:
+            self._proto.CopyFrom(proto)
+
+    @property
+    def filename(self) -> str:
+        return self._proto.filename
+
+    @filename.setter
+    def filename(self, filename: str):
+        self._proto.filename = filename
+
+    @property
+    def scale(self) -> Vector3D:
+        return Vector3D(self._proto.scale)
+
+    @scale.setter
+    def scale(self, scale: Vector3D):
+        self._proto.scale.CopyFrom(scale.proto)
+
+    @property
+    def rotation(self) -> Vector3D:
+        return Vector3D(self._proto.rotation)
+
+    @rotation.setter
+    def rotation(self, rotation: Vector3D):
+        self._proto.rotation.CopyFrom(rotation.proto)
+
+    @property
+    def offset(self) -> Vector3D:
+        return Vector3D(self._proto.offset)
+
+    @offset.setter
+    def offset(self, offset: Vector3D):
+        self._proto.offset.CopyFrom(offset.proto)
+
+    @property
+    def visible(self) -> bool:
+        return self._proto.visible
+
+    @visible.setter
+    def visible(self, visible: bool):
+        self._proto.visible = visible
+
+    @property
+    def opacity(self) -> float:
+        return self._proto.opacity
+
+    @opacity.setter
+    def opacity(self, opacity: float):
+        self._proto.opacity = opacity
 
 class Footprint(Wrapper):
     """Represents a library footprint"""
@@ -1204,10 +1305,12 @@ class Footprint(Wrapper):
     def items(self) -> Sequence[Wrapper]:
         return [unwrap(item) for item in self._proto.items]
 
+    @property
     def pads(self) -> Sequence[Pad]:
         """Returns all pads in the footprint"""
         return [item for item in self.items if isinstance(item, Pad)]
 
+    @property
     def shapes(self) -> Sequence[Shape]:
         """Returns all graphic shapes in the footprint"""
         return [
@@ -1219,9 +1322,16 @@ class Footprint(Wrapper):
             if item is not None
         ]
 
-    def texts(self) -> Sequence[Text]:
-        """Returns al free text objects in the footprint"""
-        return [item for item in self.items if isinstance(item, Text)]
+    @property
+    def texts(self) -> Sequence[Union[BoardText, BoardTextBox, Field]]:
+        """Returns all fields and free text objects in the footprint library definition"""
+        return [
+            item
+            for item in self.items
+            if isinstance(item, BoardText)
+            or isinstance(item, BoardTextBox)
+            or isinstance(item, Field)
+        ]
 
     def add_item(self, item: Wrapper):
         any = Any()
@@ -1285,21 +1395,53 @@ class FootprintInstance(BoardItem):
     def reference_field(self) -> Field:
         return Field(proto_ref=self._proto.reference_field)
 
+    @reference_field.setter
+    def reference_field(self, field: Field):
+        self._proto.reference_field.CopyFrom(field.proto)
+
     @property
     def value_field(self) -> Field:
         return Field(proto_ref=self._proto.value_field)
+
+    @value_field.setter
+    def value_field(self, field: Field):
+        self._proto.value_field.CopyFrom(field.proto)
 
     @property
     def datasheet_field(self) -> Field:
         return Field(proto_ref=self._proto.datasheet_field)
 
+    @datasheet_field.setter
+    def datasheet_field(self, field: Field):
+        self._proto.datasheet_field.CopyFrom(field.proto)
+
     @property
     def description_field(self) -> Field:
         return Field(proto_ref=self._proto.description_field)
 
+    @description_field.setter
+    def description_field(self, field: Field):
+        self._proto.description_field.CopyFrom(field.proto)
+
     @property
     def attributes(self) -> FootprintAttributes:
         return FootprintAttributes(proto_ref=self._proto.attributes)
+
+    @property
+    def texts_and_fields(self) -> Sequence[Union[BoardText, BoardTextBox, Field]]:
+        """Returns all fields and free text objects in the footprint"""
+        return [
+            item
+            for item in self.definition.items
+            if isinstance(item, BoardText)
+            or isinstance(item, BoardTextBox)
+            or isinstance(item, Field)
+        ] + [
+            self.reference_field,
+            self.value_field,
+            self.datasheet_field,
+            self.description_field,
+        ]
 
 
 class ZoneFilledPolygons(Wrapper):
@@ -1477,6 +1619,7 @@ _proto_to_object: Dict[type[Message], type[Wrapper]] = {
     board_types_pb2.GraphicShape: Shape,
     board_types_pb2.Field: Field,
     board_types_pb2.Zone: Zone,
+    board_types_pb2.Footprint3DModel: Footprint3DModel,
 }
 
 
