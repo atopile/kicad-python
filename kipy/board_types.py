@@ -23,7 +23,19 @@ from kipy.proto.common.types import KIID
 from kipy.proto.common.types import base_types_pb2
 from kipy.proto.common.types.base_types_pb2 import LockedState
 from kipy.proto.board import board_types_pb2
-from kipy.common_types import GraphicAttributes, TextAttributes, LibraryIdentifier
+from kipy.common_types import (
+    GraphicAttributes,
+    TextAttributes,
+    LibraryIdentifier,
+    Segment,
+    Arc,
+    Circle,
+    Rectangle,
+    Polygon,
+    Bezier,
+    Text,
+    TextBox,
+)
 from kipy.geometry import (
     Angle,
     Box2,
@@ -234,7 +246,7 @@ class ArcTrack(BoardItem):
         return box
 
 
-class Shape(BoardItem):
+class BoardShape(BoardItem):
     """Represents a graphic shape on a board or footprint"""
 
     def __init__(self, proto: Optional[board_types_pb2.BoardGraphicShape] = None):
@@ -282,13 +294,7 @@ class Shape(BoardItem):
     def attributes(self, attributes: GraphicAttributes):
         self._proto.shape.attributes.CopyFrom(attributes.proto)
 
-    def bounding_box(self) -> Box2:
-        raise NotImplementedError(
-            f"bounding_box() not implemented for {type(self).__name__}"
-        )
-
-
-class Segment(Shape):
+class BoardSegment(BoardShape, Segment):
     """Represents a graphic line segment (not a track) on a board or footprint"""
 
     def __init__(self, proto: Optional[board_types_pb2.BoardGraphicShape] = None):
@@ -298,32 +304,9 @@ class Segment(Shape):
             self._proto.CopyFrom(proto)
 
         assert self._proto.shape.WhichOneof("geometry") == "segment"
+        Segment.__init__(self, self._proto.shape)
 
-    @property
-    def start(self) -> Vector2:
-        return Vector2(self._proto.shape.segment.start)
-
-    @start.setter
-    def start(self, point: Vector2):
-        self._proto.shape.segment.start.CopyFrom(point.proto)
-
-    @property
-    def end(self) -> Vector2:
-        return Vector2(self._proto.shape.segment.end)
-
-    @end.setter
-    def end(self, point: Vector2):
-        self._proto.shape.segment.end.CopyFrom(point.proto)
-
-    def bounding_box(self) -> Box2:
-        """Calculates the bounding box of the segment"""
-        box = Box2()
-        box.merge(self.start)
-        box.merge(self.end)
-        return box
-
-
-class Arc(Shape):
+class BoardArc(BoardShape, Arc):
     """Represents a graphic arc (not a track) on a board or footprint"""
 
     def __init__(self, proto: Optional[board_types_pb2.BoardGraphicShape] = None):
@@ -333,70 +316,9 @@ class Arc(Shape):
             self._proto.CopyFrom(proto)
 
         assert self._proto.shape.WhichOneof("geometry") == "arc"
+        Arc.__init__(self, self._proto.shape)
 
-    @property
-    def start(self) -> Vector2:
-        return Vector2(self._proto.shape.arc.start)
-
-    @start.setter
-    def start(self, point: Vector2):
-        self._proto.shape.arc.start.CopyFrom(point.proto)
-
-    @property
-    def mid(self) -> Vector2:
-        return Vector2(self._proto.shape.arc.mid)
-
-    @mid.setter
-    def mid(self, point: Vector2):
-        self._proto.shape.arc.mid.CopyFrom(point.proto)
-
-    @property
-    def end(self) -> Vector2:
-        return Vector2(self._proto.shape.arc.end)
-
-    @end.setter
-    def end(self, point: Vector2):
-        self._proto.shape.arc.end.CopyFrom(point.proto)
-
-    def center(self) -> Optional[Vector2]:
-        """
-        Calculates the center of the arc.  Uses a different algorithm than KiCad so may have
-        slightly different results.  The KiCad API preserves the start, middle, and end points of
-        the arc, so any other properties such as the center point and angles must be calculated
-
-        :return: The center of the arc, or None if the arc is degenerate
-        """
-        # TODO we may want to add an API call to get KiCad to calculate this for us,
-        # for situations where matching KiCad's behavior exactly is important
-        return arc_center(self.start, self.mid, self.end)
-
-    def radius(self) -> float:
-        """
-        Calculates the radius of the arc.  Uses a different algorithm than KiCad so may have
-        slightly different results.  The KiCad API preserves the start, middle, and end points of
-        the arc, so any other properties such as the center point and angles must be calculated
-
-        :return: The radius of the arc, or 0 if the arc is degenerate
-        """
-        # TODO we may want to add an API call to get KiCad to calculate this for us,
-        # for situations where matching KiCad's behavior exactly is important
-        return arc_radius(self.start, self.mid, self.end)
-
-    def start_angle(self) -> Optional[float]:
-        return arc_start_angle(self.start, self.mid, self.end)
-
-    def end_angle(self) -> Optional[float]:
-        return arc_end_angle(self.start, self.mid, self.end)
-
-    def bounding_box(self) -> Box2:
-        box = Box2()
-        box.merge(self.start)
-        box.merge(self.end)
-        box.merge(self.mid)
-        return box
-
-
-class Circle(Shape):
+class BoardCircle(BoardShape, Circle):
     """Represents a graphic circle on a board or footprint"""
 
     def __init__(self, proto: Optional[board_types_pb2.BoardGraphicShape] = None):
@@ -406,36 +328,9 @@ class Circle(Shape):
             self._proto.CopyFrom(proto)
 
         assert self._proto.shape.WhichOneof("geometry") == "circle"
+        Circle.__init__(self, self._proto.shape)
 
-    @property
-    def center(self) -> Vector2:
-        return Vector2(self._proto.shape.circle.center)
-
-    @center.setter
-    def center(self, point: Vector2):
-        self._proto.shape.circle.center.CopyFrom(point.proto)
-
-    @property
-    def radius_point(self) -> Vector2:
-        return Vector2(self._proto.shape.circle.radius_point)
-
-    @radius_point.setter
-    def radius_point(self, radius_point: Vector2):
-        self._proto.shape.circle.radius_point.CopyFrom(radius_point.proto)
-
-    def radius(self) -> float:
-        """Calculates the radius of the circle"""
-        return (self.radius_point - self.center).length()
-
-    def bounding_box(self) -> Box2:
-        """Calculates the bounding box of the circle"""
-        box = Box2()
-        box.merge(self.center)
-        box.inflate(int(self.radius() + 0.5))
-        return box
-
-
-class Rectangle(Shape):
+class BoardRectangle(BoardShape, Rectangle):
     """Represents a graphic rectangle on a board or footprint"""
 
     def __init__(self, proto: Optional[board_types_pb2.BoardGraphicShape] = None):
@@ -445,29 +340,9 @@ class Rectangle(Shape):
             self._proto.CopyFrom(proto)
 
         assert self._proto.shape.WhichOneof("geometry") == "rectangle"
+        Rectangle.__init__(self, self._proto.shape)
 
-    @property
-    def top_left(self) -> Vector2:
-        return Vector2(self._proto.shape.rectangle.top_left)
-
-    @top_left.setter
-    def top_left(self, point: Vector2):
-        self._proto.shape.rectangle.top_left.CopyFrom(point.proto)
-
-    @property
-    def bottom_right(self) -> Vector2:
-        return Vector2(self._proto.shape.rectangle.bottom_right)
-
-    @bottom_right.setter
-    def bottom_right(self, point: Vector2):
-        self._proto.shape.rectangle.bottom_right.CopyFrom(point.proto)
-
-    def bounding_box(self) -> Box2:
-        """Calculates the bounding box of the rectangle"""
-        return Box2.from_pos_size(self.top_left, self.bottom_right - self.top_left)
-
-
-class Polygon(Shape):
+class BoardPolygon(BoardShape, Polygon):
     """Represents a graphic polygon on a board or footprint"""
 
     def __init__(self, proto: Optional[board_types_pb2.BoardGraphicShape] = None):
@@ -477,23 +352,9 @@ class Polygon(Shape):
             self._proto.CopyFrom(proto)
 
         assert self._proto.shape.WhichOneof("geometry") == "polygon"
+        Polygon.__init__(self, self._proto.shape)
 
-    @property
-    def polygons(self) -> Sequence[PolygonWithHoles]:
-        return [PolygonWithHoles(proto_ref=p) for p in self._proto.shape.polygon.polygons]
-
-    def bounding_box(self) -> Box2:
-        """Calculates the bounding box of the polygon"""
-        box = None
-        for polygon in self.polygons:
-            if box is None:
-                box = polygon.bounding_box()
-            else:
-                box.merge(polygon.bounding_box())
-        return box if box is not None else Box2()
-
-
-class Bezier(Shape):
+class BoardBezier(BoardShape, Bezier):
     """Represents a graphic bezier curve on a board or footprint"""
 
     def __init__(self, proto: Optional[board_types_pb2.BoardGraphicShape] = None):
@@ -503,60 +364,20 @@ class Bezier(Shape):
             self._proto.CopyFrom(proto)
 
         assert self._proto.shape.WhichOneof("geometry") == "bezier"
+        Bezier.__init__(self, self._proto.shape)
 
-    @property
-    def start(self) -> Vector2:
-        return Vector2(self._proto.shape.bezier.start)
-
-    @start.setter
-    def start(self, point: Vector2):
-        self._proto.shape.bezier.start.CopyFrom(point.proto)
-
-    @property
-    def control1(self) -> Vector2:
-        return Vector2(self._proto.shape.bezier.control1)
-
-    @control1.setter
-    def control1(self, point: Vector2):
-        self._proto.shape.bezier.control1.CopyFrom(point.proto)
-
-    @property
-    def control2(self) -> Vector2:
-        return Vector2(self._proto.shape.bezier.control2)
-
-    @control2.setter
-    def control2(self, point: Vector2):
-        self._proto.shape.bezier.control2.CopyFrom(point.proto)
-
-    @property
-    def end(self) -> Vector2:
-        return Vector2(self._proto.shape.bezier.end)
-
-    @end.setter
-    def end(self, point: Vector2):
-        self._proto.shape.bezier.end.CopyFrom(point.proto)
-
-    def bounding_box(self) -> Box2:
-        # TODO: maybe bring in a library for Bezier curve math so we can generate an
-        # bounding box from the curve approximation like KiCad does?
-        raise NotImplementedError()
-
-
-def to_concrete_shape(
-    shape: Shape,
-) -> Optional[Union[Segment, Arc, Circle, Rectangle, Polygon, Bezier]]:
+def to_concrete_board_shape(shape: BoardShape) -> Optional[BoardShape]:
     cls = {
-        "segment": Segment,
-        "arc": Arc,
-        "circle": Circle,
-        "rectangle": Rectangle,
-        "polygon": Polygon,
-        "bezier": Bezier,
+        "segment": BoardSegment,
+        "arc": BoardArc,
+        "circle": BoardCircle,
+        "rectangle": BoardRectangle,
+        "polygon": BoardPolygon,
+        "bezier": BoardBezier,
         None: None,
     }.get(shape._proto.shape.WhichOneof("geometry"), None)
 
     return cls(shape._proto) if cls is not None else None
-
 
 class BoardText(BoardItem):
     """Represents a free text object, or the text component of a field"""
@@ -571,6 +392,10 @@ class BoardText(BoardItem):
         if proto is not None:
             self._proto.CopyFrom(proto)
 
+    def as_text(self) -> Text:
+        """Returns a base Text object using the same data as this BoardText"""
+        return Text(self._proto.text)
+
     @property
     def layer(self) -> BoardLayer.ValueType:
         return self._proto.layer
@@ -584,14 +409,6 @@ class BoardText(BoardItem):
         return self._proto.id
 
     @property
-    def position(self) -> Vector2:
-        return Vector2(self._proto.text.position)
-
-    @position.setter
-    def position(self, pos: Vector2):
-        self._proto.text.position.CopyFrom(pos.proto)
-
-    @property
     def locked(self) -> bool:
         return self._proto.locked == LockedState.LS_LOCKED
 
@@ -601,6 +418,14 @@ class BoardText(BoardItem):
             True: LockedState.LS_LOCKED,
             False: LockedState.LS_UNLOCKED,
         }.get(locked, LockedState.LS_UNLOCKED)
+
+    @property
+    def position(self) -> Vector2:
+        return Vector2(self._proto.text.position)
+
+    @position.setter
+    def position(self, pos: Vector2):
+        self._proto.text.position.CopyFrom(pos.proto)
 
     @property
     def value(self) -> str:
@@ -628,6 +453,10 @@ class BoardTextBox(BoardItem):
         if proto is not None:
             self._proto.CopyFrom(proto)
 
+    def as_textbox(self) -> TextBox:
+        """Returns a base TextBox object using the same data as this BoardText"""
+        return TextBox(self._proto.textbox)
+
     @property
     def layer(self) -> BoardLayer.ValueType:
         return self._proto.layer
@@ -648,45 +477,36 @@ class BoardTextBox(BoardItem):
         }.get(locked, LockedState.LS_UNLOCKED)
 
     @property
-    def value(self) -> str:
-        return self._proto.textbox.text
-
-    @value.setter
-    def value(self, text: str):
-        self._proto.textbox.text = text
-
-    @property
     def top_left(self) -> Vector2:
         return Vector2(self._proto.textbox.top_left)
 
     @top_left.setter
-    def top_left(self, position: Vector2):
-        self._proto.textbox.top_left.CopyFrom(position.proto)
+    def top_left(self, pos: Vector2):
+        self._proto.textbox.top_left.CopyFrom(pos.proto)
 
     @property
     def bottom_right(self) -> Vector2:
         return Vector2(self._proto.textbox.bottom_right)
 
     @bottom_right.setter
-    def bottom_right(self, position: Vector2):
-        self._proto.textbox.bottom_right.CopyFrom(position.proto)
-
-    @property
-    def size(self) -> Vector2:
-        return self.bottom_right - self.top_left
-
-    @size.setter
-    def size(self, size: Vector2):
-        new_br = self.top_left + size
-        self._proto.textbox.bottom_right.CopyFrom(new_br.proto)
+    def bottom_right(self, pos: Vector2):
+        self._proto.textbox.bottom_right.CopyFrom(pos.proto)
 
     @property
     def attributes(self) -> TextAttributes:
         return TextAttributes(proto_ref=self._proto.textbox.attributes)
 
     @attributes.setter
-    def attributes(self, attributes: GraphicAttributes):
+    def attributes(self, attributes: TextAttributes):
         self._proto.textbox.attributes.CopyFrom(attributes.proto)
+
+    @property
+    def value(self) -> str:
+        return self._proto.textbox.text
+
+    @value.setter
+    def value(self, text: str):
+        self._proto.textbox.text = text
 
 
 class Field(BoardItem):
@@ -880,17 +700,17 @@ class PadStackLayer(Wrapper):
         self._proto.trapezoid_delta.CopyFrom(delta.proto)
 
     @property
-    def custom_shapes(self) -> Sequence[Shape]:
+    def custom_shapes(self) -> Sequence[BoardShape]:
         return [
             item
             for item in (
-                to_concrete_shape(Shape(shape)) for shape in self._proto.custom_shapes
+                to_concrete_board_shape(BoardShape(shape)) for shape in self._proto.custom_shapes
             )
             if item is not None
         ]
 
     @custom_shapes.setter
-    def custom_shapes(self, shapes: Sequence[Shape]):
+    def custom_shapes(self, shapes: Sequence[BoardShape]):
         del self._proto.custom_shapes[:]
         self._proto.custom_shapes.extend([shape.proto for shape in shapes])
 
@@ -1312,13 +1132,13 @@ class Footprint(Wrapper):
         return [item for item in self.items if isinstance(item, Pad)]
 
     @property
-    def shapes(self) -> Sequence[Shape]:
+    def shapes(self) -> Sequence[BoardShape]:
         """Returns all graphic shapes in the footprint"""
         return [
             item
             for item in (
-                to_concrete_shape(shape)
-                for shape in [item for item in self.items if isinstance(item, Shape)]
+                to_concrete_board_shape(shape)
+                for shape in [item for item in self.items if isinstance(item, BoardShape)]
             )
             if item is not None
         ]
@@ -1617,7 +1437,7 @@ _proto_to_object: Dict[type[Message], type[Wrapper]] = {
     board_types_pb2.BoardTextBox: BoardTextBox,
     board_types_pb2.Track: Track,
     board_types_pb2.Via: Via,
-    board_types_pb2.BoardGraphicShape: Shape,
+    board_types_pb2.BoardGraphicShape: BoardShape,
     board_types_pb2.Field: Field,
     board_types_pb2.Zone: Zone,
     board_types_pb2.Footprint3DModel: Footprint3DModel,

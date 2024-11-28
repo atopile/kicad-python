@@ -27,17 +27,17 @@ from kipy.board_types import (
     FootprintInstance,
     Net,
     Pad,
-    Shape,
+    BoardShape,
     Track,
     Via,
     Zone,
-    to_concrete_shape,
+    to_concrete_board_shape,
     unwrap
 )
 from kipy.client import ApiError, KiCadClient
 from kipy.common_types import Commit, TitleBlockInfo, TextAttributes
 from kipy.geometry import Box2, PolygonWithHoles, Vector2
-from kipy.proto.common.commands import base_commands_pb2, editor_commands_pb2
+from kipy.proto.common.commands import editor_commands_pb2
 from kipy.proto.common.envelope_pb2 import ApiStatusCode
 from kipy.util import pack_any
 from kipy.wrapper import Item, Wrapper
@@ -80,6 +80,10 @@ class Board:
     def __init__(self, kicad: KiCadClient, document: DocumentSpecifier):
         self._kicad = kicad
         self._doc = document
+
+    @property
+    def client(self) -> KiCadClient:
+        return self._kicad
 
     @property
     def document(self) -> DocumentSpecifier:
@@ -161,12 +165,12 @@ class Board:
             for item in self.get_items(types=[KiCadObjectType.KOT_PCB_FOOTPRINT])
         ]
 
-    def get_shapes(self) -> Sequence[Shape]:
+    def get_shapes(self) -> Sequence[BoardShape]:
         """Retrieves all graphic shapes (not including tracks or text) on the board"""
         return [
             item
             for item in (
-                to_concrete_shape(cast(Shape, item))
+                to_concrete_board_shape(cast(BoardShape, item))
                 for item in self.get_items(types=[KiCadObjectType.KOT_PCB_SHAPE])
             )
             if item is not None
@@ -306,13 +310,6 @@ class Board:
             for box in (item_to_bbox.get(item.id, None) for item in items)
             if box is not None
         ]
-
-
-    def get_text_extents(self, text: BoardText) -> Box2:
-        cmd = base_commands_pb2.GetTextExtents()
-        cmd.text.CopyFrom(text.proto)
-        reply = self._kicad.send(cmd, base_types_pb2.Box2)
-        return Box2.from_proto(reply)
 
     @overload
     def get_pad_shapes_as_polygons(

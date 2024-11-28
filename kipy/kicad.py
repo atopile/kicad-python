@@ -19,14 +19,18 @@ import os
 import platform
 import random
 import string
-from typing import Sequence
+from typing import Sequence, Union
 from google.protobuf.empty_pb2 import Empty
 
 from kipy.board import Board
 from kipy.client import KiCadClient, ApiError
+from kipy.common_types import Text, TextBox, CompoundShape
+from kipy.geometry import Box2
 from kipy.project import Project
 from kipy.proto.common import commands
-from kipy.proto.common.types import DocumentType, DocumentSpecifier
+from kipy.proto.common.types import base_types_pb2, DocumentType, DocumentSpecifier
+from kipy.proto.common.commands import base_commands_pb2
+
 
 def default_socket_path() -> str:
     path = os.environ.get('KICAD_API_SOCKET')
@@ -61,6 +65,13 @@ class KiCad:
         :param timeout_ms: The maximum time to wait for a response from KiCad, in milliseconds
         """
         self._client = KiCadClient(socket_path, client_name, kicad_token, timeout_ms)
+
+    @staticmethod
+    def from_client(client: KiCadClient):
+        """Creates a KiCad object from an existing KiCad client"""
+        k = KiCad.__new__(KiCad)
+        k._client = client
+        return k
 
     def get_version(self):
         """Returns the KiCad version as a string, including any package-specific info"""
@@ -98,3 +109,30 @@ class KiCad:
         if len(docs) == 0:
             raise ApiError("Expected to be able to retrieve at least one board")
         return Board(self._client, docs[0])
+
+    # Utility functions
+
+    def get_text_extents(self, text: Text) -> Box2:
+        cmd = base_commands_pb2.GetTextExtents()
+        cmd.text.CopyFrom(text.proto)
+        reply = self._client.send(cmd, base_types_pb2.Box2)
+        return Box2.from_proto(reply)
+
+    def get_text_as_shapes(
+        self, texts: Union[Text, TextBox, Sequence[Union[Text, TextBox]]]
+    ) -> list[CompoundShape]:
+        if isinstance(texts, Text) or isinstance(texts, TextBox):
+            texts = [texts]
+
+        cmd = base_commands_pb2.GetTextAsShapes()
+        for t in texts:
+            inner = base_commands_pb2.TextOrTextBox()
+            if isinstance(t, Text):
+                inner.text.CopyFrom(t.proto)
+            else:
+                inner.textbox.CopyFrom(t.proto)
+            cmd.text.append(inner)
+
+        reply = self._client.send(cmd, base_commands_pb2.GetTextAsShapesResponse)
+
+        return [CompoundShape(entry.shapes) for entry in reply.text_with_shapes]

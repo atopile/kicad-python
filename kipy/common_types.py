@@ -15,10 +15,19 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Optional
+from typing import Optional, Sequence
 from kipy.proto.common import types
+from kipy.proto.common.types import base_types_pb2
 from kipy.proto.common.types.base_types_pb2 import KIID
-from kipy.geometry import Vector2
+from kipy.geometry import (
+    Box2,
+    PolygonWithHoles,
+    Vector2,
+    arc_center,
+    arc_radius,
+    arc_start_angle,
+    arc_end_angle,
+)
 from kipy.wrapper import Wrapper
 
 # Re-exported protobuf enum types
@@ -26,6 +35,7 @@ from kipy.proto.common.types.enums_pb2 import (  # noqa
     HorizontalAlignment,
     VerticalAlignment,
 )
+
 
 class Commit:
     def __init__(self, id: KIID):
@@ -35,9 +45,13 @@ class Commit:
     def id(self) -> KIID:
         return self._id
 
+
 class Color(Wrapper):
-    def __init__(self, proto: Optional[types.Color] = None,
-                    proto_ref: Optional[types.Color] = None):
+    def __init__(
+        self,
+        proto: Optional[types.Color] = None,
+        proto_ref: Optional[types.Color] = None,
+    ):
         self._proto = proto_ref if proto_ref is not None else types.Color()
 
         if proto is not None:
@@ -75,9 +89,13 @@ class Color(Wrapper):
     def alpha(self, alpha: float):
         self._proto.a = alpha
 
+
 class TextAttributes(Wrapper):
-    def __init__(self, proto: Optional[types.TextAttributes] = None,
-                 proto_ref: Optional[types.TextAttributes] = None):
+    def __init__(
+        self,
+        proto: Optional[types.TextAttributes] = None,
+        proto_ref: Optional[types.TextAttributes] = None,
+    ):
         self._proto = proto_ref if proto_ref is not None else types.TextAttributes()
 
         if proto is not None:
@@ -195,10 +213,15 @@ class TextAttributes(Wrapper):
     def vertical_alignment(self, alignment: types.VerticalAlignment.ValueType):
         self._proto.vertical_alignment = alignment
 
+
 class LibraryIdentifier(Wrapper):
     """A KiCad library identifier (LIB_ID), consisting of a library nickname and entry name"""
-    def __init__(self, proto: Optional[types.LibraryIdentifier] = None,
-                 proto_ref: Optional[types.LibraryIdentifier] = None):
+
+    def __init__(
+        self,
+        proto: Optional[types.LibraryIdentifier] = None,
+        proto_ref: Optional[types.LibraryIdentifier] = None,
+    ):
         self._proto = proto_ref if proto_ref is not None else types.LibraryIdentifier()
 
         if proto is not None:
@@ -223,9 +246,13 @@ class LibraryIdentifier(Wrapper):
     def __str__(self) -> str:
         return f"{self.library}:{self.name}"
 
+
 class StrokeAttributes(Wrapper):
-    def __init__(self, proto: Optional[types.StrokeAttributes] = None,
-                proto_ref: Optional[types.StrokeAttributes] = None):
+    def __init__(
+        self,
+        proto: Optional[types.StrokeAttributes] = None,
+        proto_ref: Optional[types.StrokeAttributes] = None,
+    ):
         self._proto = proto_ref if proto_ref is not None else types.StrokeAttributes()
 
         if proto is not None:
@@ -257,10 +284,16 @@ class StrokeAttributes(Wrapper):
     def style(self, style: types.StrokeLineStyle.ValueType):
         self._proto.style = style
 
+
 class GraphicFillAttributes(Wrapper):
-    def __init__(self, proto: Optional[types.GraphicFillAttributes] = None,
-            proto_ref: Optional[types.GraphicFillAttributes] = None):
-        self._proto = proto_ref if proto_ref is not None else types.GraphicFillAttributes()
+    def __init__(
+        self,
+        proto: Optional[types.GraphicFillAttributes] = None,
+        proto_ref: Optional[types.GraphicFillAttributes] = None,
+    ):
+        self._proto = (
+            proto_ref if proto_ref is not None else types.GraphicFillAttributes()
+        )
 
         if proto is not None:
             self._proto.CopyFrom(proto)
@@ -272,7 +305,9 @@ class GraphicFillAttributes(Wrapper):
     @filled.setter
     def filled(self, fill: bool):
         self._proto.fill_type = (
-            types.GraphicFillType.GFT_FILLED if fill else types.GraphicFillType.GFT_UNFILLED
+            types.GraphicFillType.GFT_FILLED
+            if fill
+            else types.GraphicFillType.GFT_UNFILLED
         )
 
     @property
@@ -284,9 +319,13 @@ class GraphicFillAttributes(Wrapper):
     def color(self, color: Color):
         self._proto.color.CopyFrom(color.proto)
 
+
 class GraphicAttributes(Wrapper):
-    def __init__(self, proto: Optional[types.GraphicAttributes] = None,
-            proto_ref: Optional[types.GraphicAttributes] = None):
+    def __init__(
+        self,
+        proto: Optional[types.GraphicAttributes] = None,
+        proto_ref: Optional[types.GraphicAttributes] = None,
+    ):
         self._proto = proto_ref if proto_ref is not None else types.GraphicAttributes()
 
         if proto is not None:
@@ -303,10 +342,13 @@ class GraphicAttributes(Wrapper):
     def fill(self) -> GraphicFillAttributes:
         return self._fill
 
+
 class Text(Wrapper):
     """Common text properties (wrapper for KiCad's EDA_TEXT) shared between board and schematic"""
-    def __init__(self, proto: Optional[types.Text] = None,
-                 proto_ref: Optional[types.Text] = None):
+
+    def __init__(
+        self, proto: Optional[types.Text] = None, proto_ref: Optional[types.Text] = None
+    ):
         self._proto = proto_ref if proto_ref is not None else types.Text()
 
         if proto is not None:
@@ -336,9 +378,13 @@ class Text(Wrapper):
     def attributes(self, attributes: TextAttributes):
         self._proto.attributes.CopyFrom(attributes.proto)
 
+
 class TextBox(Wrapper):
-    def __init__(self, proto: Optional[types.TextBox] = None,
-                    proto_ref: Optional[types.TextBox] = None):
+    def __init__(
+        self,
+        proto: Optional[types.TextBox] = None,
+        proto_ref: Optional[types.TextBox] = None,
+    ):
         self._proto = proto_ref if proto_ref is not None else types.TextBox()
 
         if proto is not None:
@@ -369,15 +415,360 @@ class TextBox(Wrapper):
         self._proto.attributes.CopyFrom(attributes.proto)
 
     @property
-    def text(self) -> str:
+    def value(self) -> str:
         return self._proto.text
 
-    @text.setter
-    def text(self, text: str):
+    @value.setter
+    def value(self, text: str):
         self._proto.text = text
+
+    @property
+    def size(self) -> Vector2:
+        return self.bottom_right - self.top_left
+
+    @size.setter
+    def size(self, size: Vector2):
+        new_br = self.top_left + size
+        self._proto.bottom_right.CopyFrom(new_br.proto)
+
+
+class GraphicShape(Wrapper):
+    """Represents an abstract graphic shape (not a board or schematic item)"""
+
+    def __init__(self, proto: Optional[base_types_pb2.GraphicShape] = None):
+        self._graphic_proto = base_types_pb2.GraphicShape()
+
+        if proto is not None:
+            self._graphic_proto.CopyFrom(proto)
+
+    @property
+    def attributes(self) -> GraphicAttributes:
+        return GraphicAttributes(proto_ref=self._graphic_proto.attributes)
+
+    @attributes.setter
+    def attributes(self, attributes: GraphicAttributes):
+        self._graphic_proto.attributes.CopyFrom(attributes.proto)
+
+    def bounding_box(self) -> Box2:
+        raise NotImplementedError(
+            f"bounding_box() not implemented for {type(self).__name__}"
+        )
+
+
+class Segment(GraphicShape):
+    """Represents a base graphic segment (not a board or schematic item)"""
+
+    def __init__(self, proto: Optional[base_types_pb2.GraphicShape] = None):
+        self._graphic_proto = base_types_pb2.GraphicShape()
+
+        if proto is not None:
+            self._graphic_proto.CopyFrom(proto)
+
+        assert self._graphic_proto.WhichOneof("geometry") == "segment"
+
+    @property
+    def start(self) -> Vector2:
+        return Vector2(self._graphic_proto.segment.start)
+
+    @start.setter
+    def start(self, point: Vector2):
+        self._graphic_proto.segment.start.CopyFrom(point.proto)
+
+    @property
+    def end(self) -> Vector2:
+        return Vector2(self._graphic_proto.segment.end)
+
+    @end.setter
+    def end(self, point: Vector2):
+        self._graphic_proto.segment.end.CopyFrom(point.proto)
+
+    def bounding_box(self) -> Box2:
+        """Calculates the bounding box of the segment"""
+        box = Box2()
+        box.merge(self.start)
+        box.merge(self.end)
+        return box
+
+
+class Arc(GraphicShape):
+    """Represents a generic graphical arc (not a board or schematic item)"""
+
+    def __init__(self, proto: Optional[base_types_pb2.GraphicShape] = None):
+        self._graphic_proto = base_types_pb2.GraphicShape()
+
+        if proto is not None:
+            self._graphic_proto.CopyFrom(proto)
+
+        assert self._graphic_proto.WhichOneof("geometry") == "arc"
+
+    @property
+    def start(self) -> Vector2:
+        return Vector2(self._graphic_proto.arc.start)
+
+    @start.setter
+    def start(self, point: Vector2):
+        self._graphic_proto.arc.start.CopyFrom(point.proto)
+
+    @property
+    def mid(self) -> Vector2:
+        return Vector2(self._graphic_proto.arc.mid)
+
+    @mid.setter
+    def mid(self, point: Vector2):
+        self._graphic_proto.arc.mid.CopyFrom(point.proto)
+
+    @property
+    def end(self) -> Vector2:
+        return Vector2(self._graphic_proto.arc.end)
+
+    @end.setter
+    def end(self, point: Vector2):
+        self._graphic_proto.arc.end.CopyFrom(point.proto)
+
+    def center(self) -> Optional[Vector2]:
+        """
+        Calculates the center of the arc.  Uses a different algorithm than KiCad so may have
+        slightly different results.  The KiCad API preserves the start, middle, and end points of
+        the arc, so any other properties such as the center point and angles must be calculated
+
+        :return: The center of the arc, or None if the arc is degenerate
+        """
+        # TODO we may want to add an API call to get KiCad to calculate this for us,
+        # for situations where matching KiCad's behavior exactly is important
+        return arc_center(self.start, self.mid, self.end)
+
+    def radius(self) -> float:
+        """
+        Calculates the radius of the arc.  Uses a different algorithm than KiCad so may have
+        slightly different results.  The KiCad API preserves the start, middle, and end points of
+        the arc, so any other properties such as the center point and angles must be calculated
+
+        :return: The radius of the arc, or 0 if the arc is degenerate
+        """
+        # TODO we may want to add an API call to get KiCad to calculate this for us,
+        # for situations where matching KiCad's behavior exactly is important
+        return arc_radius(self.start, self.mid, self.end)
+
+    def start_angle(self) -> Optional[float]:
+        return arc_start_angle(self.start, self.mid, self.end)
+
+    def end_angle(self) -> Optional[float]:
+        return arc_end_angle(self.start, self.mid, self.end)
+
+    def bounding_box(self) -> Box2:
+        box = Box2()
+        box.merge(self.start)
+        box.merge(self.end)
+        box.merge(self.mid)
+        return box
+
+
+class Circle(GraphicShape):
+    """Represents a graphic circle (not a board or schematic item)"""
+
+    def __init__(self, proto: Optional[base_types_pb2.GraphicShape] = None):
+        self._graphic_proto = base_types_pb2.GraphicShape()
+
+        if proto is not None:
+            self._graphic_proto.CopyFrom(proto)
+
+        assert self._graphic_proto.WhichOneof("geometry") == "circle"
+
+    @property
+    def center(self) -> Vector2:
+        return Vector2(self._graphic_proto.circle.center)
+
+    @center.setter
+    def center(self, point: Vector2):
+        self._graphic_proto.circle.center.CopyFrom(point.proto)
+
+    @property
+    def radius_point(self) -> Vector2:
+        return Vector2(self._graphic_proto.circle.radius_point)
+
+    @radius_point.setter
+    def radius_point(self, radius_point: Vector2):
+        self._graphic_proto.circle.radius_point.CopyFrom(radius_point.proto)
+
+    def radius(self) -> float:
+        """Calculates the radius of the circle"""
+        return (self.radius_point - self.center).length()
+
+    def bounding_box(self) -> Box2:
+        """Calculates the bounding box of the circle"""
+        box = Box2()
+        box.merge(self.center)
+        box.inflate(int(self.radius() + 0.5))
+        return box
+
+
+class Rectangle(GraphicShape):
+    """Represents a graphic rectangle (not a board or schematic item)"""
+
+    def __init__(self, proto: Optional[base_types_pb2.GraphicShape] = None):
+        self._graphic_proto = base_types_pb2.GraphicShape()
+
+        if proto is not None:
+            self._graphic_proto.CopyFrom(proto)
+
+        assert self._graphic_proto.WhichOneof("geometry") == "rectangle"
+
+    @property
+    def top_left(self) -> Vector2:
+        return Vector2(self._graphic_proto.rectangle.top_left)
+
+    @top_left.setter
+    def top_left(self, point: Vector2):
+        self._graphic_proto.rectangle.top_left.CopyFrom(point.proto)
+
+    @property
+    def bottom_right(self) -> Vector2:
+        return Vector2(self._graphic_proto.rectangle.bottom_right)
+
+    @bottom_right.setter
+    def bottom_right(self, point: Vector2):
+        self._graphic_proto.rectangle.bottom_right.CopyFrom(point.proto)
+
+    def bounding_box(self) -> Box2:
+        """Calculates the bounding box of the rectangle"""
+        return Box2.from_pos_size(self.top_left, self.bottom_right - self.top_left)
+
+
+class Polygon(GraphicShape):
+    """Represents a graphic polygon (not a board or schematic item)"""
+
+    def __init__(self, proto: Optional[base_types_pb2.GraphicShape] = None):
+        self._graphic_proto = base_types_pb2.GraphicShape()
+
+        if proto is not None:
+            self._graphic_proto.CopyFrom(proto)
+
+        assert self._graphic_proto.WhichOneof("geometry") == "polygon"
+
+    @property
+    def polygons(self) -> Sequence[PolygonWithHoles]:
+        return [PolygonWithHoles(proto_ref=p) for p in self._graphic_proto.polygon.polygons]
+
+    def bounding_box(self) -> Box2:
+        """Calculates the bounding box of the polygon"""
+        box = None
+        for polygon in self.polygons:
+            if box is None:
+                box = polygon.bounding_box()
+            else:
+                box.merge(polygon.bounding_box())
+        return box if box is not None else Box2()
+
+
+class Bezier(GraphicShape):
+    """Represents a graphic bezier curve (not a board or schematic item)"""
+
+    def __init__(self, proto: Optional[base_types_pb2.GraphicShape] = None):
+        self._graphic_proto = base_types_pb2.GraphicShape()
+
+        if proto is not None:
+            self._graphic_proto.CopyFrom(proto)
+
+        assert self._graphic_proto.WhichOneof("geometry") == "bezier"
+
+    @property
+    def start(self) -> Vector2:
+        return Vector2(self._graphic_proto.bezier.start)
+
+    @start.setter
+    def start(self, point: Vector2):
+        self._graphic_proto.bezier.start.CopyFrom(point.proto)
+
+    @property
+    def control1(self) -> Vector2:
+        return Vector2(self._graphic_proto.bezier.control1)
+
+    @control1.setter
+    def control1(self, point: Vector2):
+        self._graphic_proto.bezier.control1.CopyFrom(point.proto)
+
+    @property
+    def control2(self) -> Vector2:
+        return Vector2(self._graphic_proto.bezier.control2)
+
+    @control2.setter
+    def control2(self, point: Vector2):
+        self._graphic_proto.bezier.control2.CopyFrom(point.proto)
+
+    @property
+    def end(self) -> Vector2:
+        return Vector2(self._graphic_proto.bezier.end)
+
+    @end.setter
+    def end(self, point: Vector2):
+        self._graphic_proto.bezier.end.CopyFrom(point.proto)
+
+    def bounding_box(self) -> Box2:
+        # TODO: maybe bring in a library for Bezier curve math so we can generate an
+        # bounding box from the curve approximation like KiCad does?
+        raise NotImplementedError()
+
+
+def to_concrete_shape(shape: GraphicShape) -> Optional[GraphicShape]:
+    cls = {
+        "segment": Segment,
+        "arc": Arc,
+        "circle": Circle,
+        "rectangle": Rectangle,
+        "polygon": Polygon,
+        "bezier": Bezier,
+        None: None,
+    }.get(shape._graphic_proto.WhichOneof("geometry"), None)
+
+    return cls(shape._graphic_proto) if cls is not None else None
+
+
+class CompoundShape(Wrapper):
+    """Represents a compound shape (a collection of other shapes)"""
+
+    def __init__(self, proto: Optional[base_types_pb2.CompoundShape] = None):
+        self._proto = base_types_pb2.CompoundShape()
+
+        if proto is not None:
+            self._proto.CopyFrom(proto)
+
+    @property
+    def shapes(self) -> Sequence[GraphicShape]:
+        return [
+            shape
+            for shape in (
+                to_concrete_shape(GraphicShape(subshape))
+                for subshape in self._proto.shapes
+            )
+            if shape is not None
+        ]
+
+    def __iter__(self):
+        return iter(self.shapes)
+
+    def __len__(self):
+        return len(self._proto.shapes)
+
+    def __getitem__(self, index):
+        return self.shapes[index]
+
+    def __setitem__(self, index, shape: GraphicShape):
+        self._proto.shapes[index].CopyFrom(shape._graphic_proto)
+
+    def __delitem__(self, index):
+        del self._proto.shapes[index]
+
+    def append(self, shape: GraphicShape):
+        new_shape = self._proto.shapes.add()
+        new_shape.CopyFrom(shape.proto)
+
+
 class TitleBlockInfo(Wrapper):
-    def __init__(self, proto: Optional[types.TitleBlockInfo] = None,
-                    proto_ref: Optional[types.TitleBlockInfo] = None):
+    def __init__(
+        self,
+        proto: Optional[types.TitleBlockInfo] = None,
+        proto_ref: Optional[types.TitleBlockInfo] = None,
+    ):
         self._proto = proto_ref if proto_ref is not None else types.TitleBlockInfo()
 
         if proto is not None:
@@ -426,7 +817,7 @@ class TitleBlockInfo(Wrapper):
             6: self._proto.comment6,
             7: self._proto.comment7,
             8: self._proto.comment8,
-            9: self._proto.comment9
+            9: self._proto.comment9,
         }
 
     @comments.setter
