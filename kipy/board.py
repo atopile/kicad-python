@@ -204,6 +204,15 @@ class Board:
     def get_zones(self) -> Sequence[Zone]:
         return [cast(Zone, item) for item in self.get_items(types=[KiCadObjectType.KOT_PCB_ZONE])]
 
+    def get_as_string(self) -> str:
+        command = editor_commands_pb2.SaveDocumentToString()
+        command.document.CopyFrom(self._doc)
+        return self._kicad.send(command, editor_commands_pb2.SavedDocumentResponse).contents
+
+    def get_selection_as_string(self) -> str:
+        command = editor_commands_pb2.SaveSelectionToString()
+        return self._kicad.send(command, editor_commands_pb2.SavedSelectionResponse).contents
+
     def update_items(self, items: Union[BoardItem, Sequence[BoardItem]]):
         command = UpdateItems()
         command.header.document.CopyFrom(self._doc)
