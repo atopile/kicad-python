@@ -19,6 +19,7 @@ import os
 import platform
 import random
 import string
+from tempfile import gettempdir
 from typing import Sequence, Union
 from google.protobuf.empty_pb2 import Empty
 
@@ -36,7 +37,7 @@ def default_socket_path() -> str:
     path = os.environ.get('KICAD_API_SOCKET')
     if path is not None:
         return path
-    return 'ipc://\\.\\pipe\\kicad' if platform.system() == 'Windows' else 'ipc:///tmp/kicad/api.sock'
+    return f'ipc://{gettempdir()}\\kicad\\api.sock' if platform.system() == 'Windows' else 'ipc:///tmp/kicad/api.sock'
 
 def random_client_name() -> str:
     return 'anonymous-'+''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
