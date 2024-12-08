@@ -5,14 +5,28 @@ First, run `git submodule update --init` to add KiCad's source code as a submodu
 Next install protobuf-compiler
 
 then, install `poetry` and use it to install the required Python dependencies
+(you may need to use `python` instead of `python3` on some platforms)
+
+Option 1: install `poetry` globally and then use `poetry shell` to create a virtual Python
+environment for `kicad-python` development:
 
 ```sh
-$ pip3 install poetry pre-commit
+$ sudo apt install python3-poetry # Or whatever other way you want to install Poetry
 $ poetry shell
 $ poetry install
 ```
 
-Then, to build the library
+Option 2: use some tool other than Poetry to manage your Python virtual environments:
+
+```sh
+$ python3 -m venv .env
+$ . .env/bin/activate
+$ python3 -m pip install --upgrade pip
+$ python3 -m pip install poetry pre-commit
+$ poetry install
+```
+
+Then, to build the library after making changes
 
 ```sh
 $ poetry build
@@ -20,15 +34,7 @@ $ poetry build
 
 # Running examples
 
-Get into a virtual environment for development using Poetry, and then install
-the dependencies and the built package:
-
-```sh
-$ poetry shell
-$ poetry install
-```
-
-Then, start KiCad and run:
+With KiCad running and the API server enabled in Preferences > Plugins, you should be able to run:
 
 ```sh
 $ python3 examples/hello.py
