@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "kicad-python"
-version = "0.1.0a0"
+version = "0.1.0a1"
 description = "KiCad API Python Bindings"
 authors = ["The KiCad Development Team"]
 homepage = "https://kicad.org/"
@@ -12,7 +12,7 @@ packages = [
 ]
 include = ["**/kipy/**/*.py", "**/kipy/**/*.pyi"]
 classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
+    "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Topic :: Scientific/Engineering :: Electronic Design Automation (EDA)"
