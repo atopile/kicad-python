@@ -7,12 +7,8 @@ build-job:
   before_script:
     - git submodule update --init
     - dnf install protobuf-compiler
-    - pip3 install poetry pre-commit virtualenv
-    - pre-commit install
-    # - poetry shell # can not be used in CI https://github.com/orgs/python-poetry/discussions/3526
+    - pip3 install poetry virtualenv
     - python3 -m venv env
     - source env/bin/activate
-    - poetry install
   script:
-    - poetry build
-    #- python3 examples/layer_indicator/layer_indicator.py # kicad needs to be builded and started before executing this
+    - poetry install -v
