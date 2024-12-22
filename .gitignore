@@ -30,3 +30,6 @@ kipy/proto/**/*_pb2.pyi
 # Tooling
 .nox
 .ruff_cache
+
+# Documentation
+docs/_build

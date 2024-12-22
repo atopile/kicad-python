@@ -22,6 +22,8 @@ classifiers = [
 python = ">=3.9,<3.13"
 protobuf = "^5.29"
 pynng = "^0.8.0"
+sphinx = "7.4"
+furo = "^2024.8.6"
 
 [tool.poetry.group.dev.dependencies]
 nox = "^2024.10.9"
