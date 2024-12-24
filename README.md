@@ -48,6 +48,10 @@ Check out the repository for some example scripts that may serve as a starting p
 
 ## Release History
 
+### 0.1.1 (December 24, 2024)
+
+- Bump dependency versions to fix compilation with newer protoc
+
 ### 0.1.0 (December 21, 2024)
 
 *Corresponding KiCad version: 9.0.0-rc1*
