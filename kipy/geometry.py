@@ -376,6 +376,18 @@ class PolyLineNode(Wrapper):
         if proto is not None:
             self._proto.CopyFrom(proto)
 
+    @staticmethod
+    def from_point(point: Vector2):
+        n = PolyLineNode()
+        n.point = point
+        return n
+
+    @staticmethod
+    def from_xy(x: int, y: int):
+        n = PolyLineNode()
+        n.point = Vector2.from_xy(x, y)
+        return n
+
     def __repr__(self):
         if self.has_point:
             return f"PolyLineNode(point={self.point})"
@@ -474,6 +486,10 @@ class PolygonWithHoles(Wrapper):
     @property
     def outline(self) -> PolyLine:
         return PolyLine(proto_ref=self._proto.outline)
+
+    @outline.setter
+    def outline(self, outline: PolyLine):
+        self._proto.outline.CopyFrom(outline._proto)
 
     @property
     def holes(self) -> list[PolyLine]:

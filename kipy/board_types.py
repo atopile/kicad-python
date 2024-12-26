@@ -48,6 +48,7 @@ from kipy.geometry import (
     arc_end_angle,
 )
 from kipy.util import unpack_any
+from kipy.util.units import from_mm
 from kipy.wrapper import Item, Wrapper
 
 # Re-exported protobuf enum types
@@ -1301,6 +1302,14 @@ class Zone(BoardItem):
 
         if proto is not None:
             self._proto.CopyFrom(proto)
+        else:
+            # Set reasonable defaults from KiCad ZONE_SETTINGS for convenience
+            self.type = ZoneType.ZT_COPPER
+            self.min_thickness = from_mm(0.25)
+            self.min_island_area = 10 * from_mm(1) * from_mm(1)
+            self.island_mode = IslandRemovalMode.IRM_ALWAYS
+            self.border_style = ZoneBorderStyle.ZBS_DIAGONAL_EDGE
+            self.border_hatch_pitch = from_mm(0.5)
 
     @property
     def type(self) -> ZoneType.ValueType:
@@ -1350,10 +1359,6 @@ class Zone(BoardItem):
     def filled(self) -> bool:
         return self._proto.filled
 
-    @filled.setter
-    def filled(self, filled: bool):
-        self._proto.filled = filled
-
     @property
     def locked(self) -> bool:
         return self._proto.locked == LockedState.LS_LOCKED
@@ -1384,9 +1389,16 @@ class Zone(BoardItem):
 
     @property
     def clearance(self) -> Optional[int]:
+        """The override (local) clearance for this filled copper zone"""
         if self.is_rule_area():
             return None
         return self._proto.copper_settings.clearance.value_nm
+
+    @clearance.setter
+    def clearance(self, clearance: int):
+        if self.is_rule_area():
+            raise ValueError("clearance does not apply to rule areas")
+        self._proto.copper_settings.clearance.value_nm = clearance
 
     @property
     def min_thickness(self) -> Optional[int]:
@@ -1394,17 +1406,35 @@ class Zone(BoardItem):
             return None
         return self._proto.copper_settings.min_thickness.value_nm
 
+    @min_thickness.setter
+    def min_thickness(self, thickness: int):
+        if self.is_rule_area():
+            raise ValueError("min thickness does not apply to rule areas")
+        self._proto.copper_settings.min_thickness.value_nm = thickness
+
     @property
     def island_mode(self) -> Optional[IslandRemovalMode.ValueType]:
         if self.is_rule_area():
             return None
         return self._proto.copper_settings.island_mode
 
+    @island_mode.setter
+    def island_mode(self, mode: IslandRemovalMode.ValueType):
+        if self.is_rule_area():
+            raise ValueError("island removal mode does not apply to rule areas")
+        self._proto.copper_settings.island_mode = mode
+
     @property
     def min_island_area(self) -> Optional[int]:
         if self.is_rule_area():
             return None
         return self._proto.copper_settings.min_island_area
+
+    @min_island_area.setter
+    def min_island_area(self, area: int):
+        if self.is_rule_area():
+            raise ValueError("minimum island area does not apply to rule areas")
+        self._proto.copper_settings.min_island_area = area
 
     @property
     def fill_mode(self) -> Optional[ZoneFillMode.ValueType]:
@@ -1423,6 +1453,22 @@ class Zone(BoardItem):
         if self.is_rule_area():
             return None
         return self._proto.copper_settings.teardrop
+
+    @property
+    def border_style(self) -> ZoneBorderStyle.ValueType:
+        return self._proto.border.style
+
+    @border_style.setter
+    def border_style(self, style: ZoneBorderStyle.ValueType):
+        self._proto.border.style = style
+
+    @property
+    def border_hatch_pitch(self) -> int:
+        return self._proto.border.pitch.value_nm
+
+    @border_hatch_pitch.setter
+    def border_hatch_pitch(self, value: int):
+        self._proto.border.pitch.value_nm = value
 
     def bounding_box(self) -> Box2:
         return self.outline.bounding_box()
