@@ -37,14 +37,37 @@ time, please consider this a development preview.
 
 See COMPILING.md
 
-## API Documentation
+Note that this library builds against the API definitions (proto files) in the `kicad` submodule.
+Official releases of the library to PyPI should use a tagged release of KiCad, but the development
+branch of `kicad-python` may sometimes move the submodule pointer to non-tagged commits during the
+course of development.  If you are using this library from source rather than from PyPI, remember
+to keep the submodule updated and to test against a suitable build of KiCad, which may need to be
+a nightly or testing build in some situations.
+
+## Getting Started
+
+To check that everything is working, install `kicad-python` (either follow the directions in
+COMPILING.md or else install the latest version from PyPI using `pip install kicad-python`).
+Launch KiCad, make sure the API server is enabled in Preferences > Plugins, and then you should be
+able to run:
+
+```sh
+$ python3 ./examples/hello.py
+```
+
+This should print out the version of KiCad you have connected to.
+
+## Documentation
 
 There is no documentation separate from the code comments and examples yet, sorry!  This will be
 more of a priority once the KiCad 9 release is stable.
 
 ## Examples
 
-Check out the repository for some example scripts that may serve as a starting point.
+Check out the repository for some example scripts that may serve as a starting point.  Some of the
+examples are snippets that can be run directly from a terminal or your Python development
+environment, and some are KiCad action plugins that can be loaded into the PCB editor.  For the
+plugins, copy or symlink them into the appropriate plugins path in order for KiCad to find them.
 
 ## Release History
 
