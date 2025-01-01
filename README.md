@@ -24,14 +24,11 @@ running with the API server enabled in Preferences > Plugins.  This package also
 
 ## Contributing
 
-At the moment, these bindings are being developed in parallel with the IPC API itself, and
-development is being coordinated by the KiCad team (main point of contact: Jon Evans / @craftyjon).
-Expect rapid change and instability during this development period, and please do not send merge
-requests without discussing your idea for changes with the team ahead of time.
+Please file bug reports and feature requests in this Gitlab project.  The team may move them to the
+main KiCad repository depending on the nature of the request.
 
-Once the initial stable API is released (planned for KiCad 9.0 in February 2025), this Python
-library will also have its first stable release and be considered fully supported.  Until that
-time, please consider this a development preview.
+Merge requests are welcome for minor fixes and improvements.  More significant changes should be
+discussed with the development team (via email, or in an issue) first.
 
 ## Building
 
