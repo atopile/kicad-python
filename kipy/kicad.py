@@ -175,6 +175,7 @@ class KiCad:
     # Utility functions
 
     def get_text_extents(self, text: Text) -> Box2:
+        """Returns the bounding box of the given text object"""
         cmd = base_commands_pb2.GetTextExtents()
         cmd.text.CopyFrom(text.proto)
         reply = self._client.send(cmd, base_types_pb2.Box2)
@@ -183,6 +184,7 @@ class KiCad:
     def get_text_as_shapes(
         self, texts: Union[Text, TextBox, Sequence[Union[Text, TextBox]]]
     ) -> list[CompoundShape]:
+        """Returns polygonal shapes representing the given text objects"""
         if isinstance(texts, Text) or isinstance(texts, TextBox):
             texts = [texts]
 
