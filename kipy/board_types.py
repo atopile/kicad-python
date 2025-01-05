@@ -23,7 +23,6 @@ from kipy.proto.common.types import KIID
 from kipy.proto.common.types import base_types_pb2
 from kipy.proto.common.types.base_types_pb2 import LockedState
 from kipy.proto.board import board_commands_pb2, board_types_pb2
-from kipy.board import is_copper_layer
 from kipy.common_types import (
     GraphicAttributes,
     TextAttributes,
@@ -49,6 +48,7 @@ from kipy.geometry import (
     arc_end_angle,
 )
 from kipy.util import unpack_any
+from kipy.util.board_layer import is_copper_layer
 from kipy.util.units import from_mm
 from kipy.wrapper import Item, Wrapper
 

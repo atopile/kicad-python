@@ -69,43 +69,6 @@ from kipy.proto.board.board_types_pb2 import ( #noqa
     BoardLayer
 )
 
-def is_copper_layer(layer: BoardLayer.ValueType) -> bool:
-    """Checks if the given layer is a copper layer"""
-    return layer in {
-        BoardLayer.BL_F_Cu,
-        BoardLayer.BL_B_Cu,
-        BoardLayer.BL_In1_Cu,
-        BoardLayer.BL_In2_Cu,
-        BoardLayer.BL_In3_Cu,
-        BoardLayer.BL_In4_Cu,
-        BoardLayer.BL_In5_Cu,
-        BoardLayer.BL_In6_Cu,
-        BoardLayer.BL_In7_Cu,
-        BoardLayer.BL_In8_Cu,
-        BoardLayer.BL_In9_Cu,
-        BoardLayer.BL_In10_Cu,
-        BoardLayer.BL_In11_Cu,
-        BoardLayer.BL_In12_Cu,
-        BoardLayer.BL_In13_Cu,
-        BoardLayer.BL_In14_Cu,
-        BoardLayer.BL_In15_Cu,
-        BoardLayer.BL_In16_Cu,
-        BoardLayer.BL_In17_Cu,
-        BoardLayer.BL_In18_Cu,
-        BoardLayer.BL_In19_Cu,
-        BoardLayer.BL_In20_Cu,
-        BoardLayer.BL_In21_Cu,
-        BoardLayer.BL_In22_Cu,
-        BoardLayer.BL_In23_Cu,
-        BoardLayer.BL_In24_Cu,
-        BoardLayer.BL_In25_Cu,
-        BoardLayer.BL_In26_Cu,
-        BoardLayer.BL_In27_Cu,
-        BoardLayer.BL_In28_Cu,
-        BoardLayer.BL_In29_Cu,
-        BoardLayer.BL_In30_Cu
-    }
-
 class BoardLayerGraphicsDefaults(Wrapper):
     """The default properties for graphic items added on a given class of board layer"""
     def __init__(self, proto: Optional[board_pb2.BoardLayerGraphicsDefaults] = None):
