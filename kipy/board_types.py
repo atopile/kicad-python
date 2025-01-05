@@ -23,6 +23,7 @@ from kipy.proto.common.types import KIID
 from kipy.proto.common.types import base_types_pb2
 from kipy.proto.common.types.base_types_pb2 import LockedState
 from kipy.proto.board import board_commands_pb2, board_types_pb2
+from kipy.board import is_copper_layer
 from kipy.common_types import (
     GraphicAttributes,
     TextAttributes,
@@ -116,6 +117,12 @@ class Track(BoardItem):
         if proto is not None:
             self._proto.CopyFrom(proto)
 
+    def __repr__(self) -> str:
+        return (
+            f"Track(start={self.start}, end={self.end}, layer={BoardLayer.Name(self.layer)}, "
+            f"net={self.net.name})"
+        )
+
     @property
     def net(self) -> Net:
         return Net(self._proto.net)
@@ -169,6 +176,12 @@ class ArcTrack(BoardItem):
 
         if proto is not None:
             self._proto.CopyFrom(proto)
+
+    def __repr__(self) -> str:
+        return (
+            f"ArcTrack(start={self.start}, mid={self.mid}, end={self.end}, "
+            f"layer={BoardLayer.Name(self.layer)}, net={self.net.name})"
+        )
 
     @property
     def net(self) -> Net:
@@ -316,6 +329,18 @@ class BoardSegment(BoardShape, Segment):
         assert self._proto.shape.WhichOneof("geometry") == "segment"
         Segment.__init__(self, self._proto.shape)
 
+    def __repr__(self) -> str:
+        net_repr = (
+            f", net={self.net.name}"
+            if is_copper_layer(self.layer)
+            and self._proto.HasField("net")
+            else ""
+        )
+        return (
+            f"BoardSegment(start={self.start}, end={self.end}, layer={BoardLayer.Name(self.layer)}"
+            f"{net_repr})"
+        )
+
 class BoardArc(BoardShape, Arc):
     """Represents a graphic arc (not a track) on a board or footprint"""
 
@@ -327,6 +352,18 @@ class BoardArc(BoardShape, Arc):
 
         assert self._proto.shape.WhichOneof("geometry") == "arc"
         Arc.__init__(self, self._proto.shape)
+
+    def __repr__(self) -> str:
+        net_repr = (
+            f", net={self.net.name}"
+            if is_copper_layer(self.layer)
+            and self._proto.HasField("net")
+            else ""
+        )
+        return (
+            f"BoardArc(start={self.start}, mid={self.mid}, end={self.end}, "
+            f"layer={BoardLayer.Name(self.layer)}{net_repr})"
+        )
 
 class BoardCircle(BoardShape, Circle):
     """Represents a graphic circle on a board or footprint"""
@@ -340,6 +377,18 @@ class BoardCircle(BoardShape, Circle):
         assert self._proto.shape.WhichOneof("geometry") == "circle"
         Circle.__init__(self, self._proto.shape)
 
+    def __repr__(self) -> str:
+        net_repr = (
+            f", net={self.net.name}"
+            if is_copper_layer(self.layer)
+            and self._proto.HasField("net")
+            else ""
+        )
+        return (
+            f"BoardCircle(center={self.center}, radius={self.radius}, "
+            f"layer={BoardLayer.Name(self.layer)}{net_repr})"
+        )
+
 class BoardRectangle(BoardShape, Rectangle):
     """Represents a graphic rectangle on a board or footprint"""
 
@@ -351,6 +400,18 @@ class BoardRectangle(BoardShape, Rectangle):
 
         assert self._proto.shape.WhichOneof("geometry") == "rectangle"
         Rectangle.__init__(self, self._proto.shape)
+
+    def __repr__(self) -> str:
+        net_repr = (
+            f", net={self.net.name}"
+            if is_copper_layer(self.layer)
+            and self._proto.HasField("net")
+            else ""
+        )
+        return (
+            f"BoardRectangle(top_left={self.top_left}, bottom_right={self.bottom_right}, "
+            f"layer={BoardLayer.Name(self.layer)}{net_repr}"
+        )
 
 class BoardPolygon(BoardShape, Polygon):
     """Represents a graphic polygon on a board or footprint"""
@@ -364,6 +425,18 @@ class BoardPolygon(BoardShape, Polygon):
         assert self._proto.shape.WhichOneof("geometry") == "polygon"
         Polygon.__init__(self, self._proto.shape)
 
+    def __repr__(self) -> str:
+        net_repr = (
+            f", net={self.net.name}"
+            if is_copper_layer(self.layer)
+            and self._proto.HasField("net")
+            else ""
+        )
+        return (
+            f"BoardPolygon(points={self.polygons}, layer={BoardLayer.Name(self.layer)}"
+            f"{net_repr})"
+        )
+
 class BoardBezier(BoardShape, Bezier):
     """Represents a graphic bezier curve on a board or footprint"""
 
@@ -375,6 +448,18 @@ class BoardBezier(BoardShape, Bezier):
 
         assert self._proto.shape.WhichOneof("geometry") == "bezier"
         Bezier.__init__(self, self._proto.shape)
+
+    def __repr__(self) -> str:
+        net_repr = (
+            f", net={self.net.name}"
+            if is_copper_layer(self.layer)
+            and self._proto.HasField("net")
+            else ""
+        )
+        return (
+            f"BoardBezier(start={self.start}, control1={self.control1}, control2={self.control2}, "
+            f"end={self.end}, layer={BoardLayer.Name(self.layer)}{net_repr})"
+        )
 
 def to_concrete_board_shape(shape: BoardShape) -> Optional[BoardShape]:
     cls = {
@@ -401,6 +486,9 @@ class BoardText(BoardItem):
 
         if proto is not None:
             self._proto.CopyFrom(proto)
+
+    def __repr__(self) -> str:
+        return f"BoardText(value={self.value}, position={self.position}, layer={BoardLayer.Name(self.layer)})"
 
     def as_text(self) -> Text:
         """Returns a base Text object using the same data as this BoardText"""
@@ -462,6 +550,12 @@ class BoardTextBox(BoardItem):
 
         if proto is not None:
             self._proto.CopyFrom(proto)
+
+    def __repr__(self) -> str:
+        return (
+            f"BoardTextBox(value={self.value}, top_left={self.top_left}, "
+            f"bottom_right={self.bottom_right}, layer={BoardLayer.Name(self.layer)})"
+        )
 
     def as_textbox(self) -> TextBox:
         """Returns a base TextBox object using the same data as this BoardText"""
@@ -531,6 +625,9 @@ class Field(BoardItem):
 
         if proto is not None:
             self._proto.CopyFrom(proto)
+
+    def __repr__(self) -> str:
+        return f"Field(name={self.name}, text={self.text}, layer={BoardLayer.Name(self.layer)})"
 
     @property
     def field_id(self) -> int:
@@ -972,6 +1069,12 @@ class Via(BoardItem):
         if proto is not None:
             self._proto.CopyFrom(proto)
 
+    def __repr__(self) -> str:
+        return (
+            f"Via(position={self.position}, net={self.net.name}, type={ViaType.Name(self.type)}, "
+            f"locked={self.locked})"
+        )
+
     @property
     def position(self) -> Vector2:
         return Vector2(self._proto.position)
@@ -1124,6 +1227,9 @@ class Footprint(Wrapper):
         if proto is not None:
             self._proto.CopyFrom(proto)
 
+    def __repr__(self) -> str:
+        return f"Footprint(id={self.id}, items={len(self.items)})"
+
     @property
     def id(self) -> LibraryIdentifier:
         return LibraryIdentifier(proto_ref=self._proto.id)
@@ -1178,6 +1284,9 @@ class FootprintInstance(BoardItem):
 
         if proto is not None:
             self._proto.CopyFrom(proto)
+
+    def __repr__(self) -> str:
+        return f"FootprintInstance(id={self.id}, pos={self.position}, layer={BoardLayer.Name(self.layer)})"
 
     @property
     def id(self) -> KIID:
