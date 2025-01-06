@@ -34,10 +34,12 @@ $ python3 -m pip install poetry pre-commit
 $ poetry install
 ```
 
-Then, to build the library after making changes
+Then, to build the library and install it into the local environment:
 
 ```sh
+$ poetry env activate   # If you didn't run `poetry shell` earlier
 $ poetry build
+$ pip install -e .
 ```
 
 # Running examples
@@ -47,6 +49,8 @@ With KiCad running and the API server enabled in Preferences > Plugins, you shou
 ```sh
 $ python3 examples/hello.py
 ```
+
+NOTE: On some platforms, including Windows, you should use `python` instead of `python3`.
 
 This will work if you have a KiCad instance running, with the API server enabled,
 and the server is listening at the default location (which will be the case if there
