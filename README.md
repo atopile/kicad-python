@@ -7,7 +7,7 @@ The KiCad IPC API can be considered in "public beta" state with the release of K
 planned for on or around February 1, 2025).  The existing SWIG-based Python bindings for KiCad's
 PCB editor still exist in KiCad 9, but are in maintenance mode and will not be expanded.
 
-For more information about the IPC API, please see the [KiCad developer documentation](https://dev-docs.kicad.org).
+For more information about the IPC API, please see the [KiCad developer documentation](https://dev-docs.kicad.org/en/apis-and-binding/ipc-api/index.html).  Specific documentation for developing add-ons is [also available](https://dev-docs.kicad.org/en/apis-and-binding/ipc-api/for-addon-developers/index.html).
 
 > Note: Version 0.0.2 and prior of this package are an obsolete earlier effort and are unrelated to
 > this codebase.
@@ -30,16 +30,19 @@ main KiCad repository depending on the nature of the request.
 Merge requests are welcome for minor fixes and improvements.  More significant changes should be
 discussed with the development team (via email, or in an issue) first.
 
-## Building
+## Building from Source
 
-See COMPILING.md
+Most users should use `kicad-python` by installing the latest version from PyPI.  You can also
+build and install the library from this repository, to test unreleased changes or contribute to
+the development.  For instructions on how to do so, please see `COMPILING.md`.
 
-Note that this library builds against the API definitions (proto files) in the `kicad` submodule.
+Note that this library builds against the API definitions (`.proto` files) in the `kicad` submodule.
 Official releases of the library to PyPI should use a tagged release of KiCad, but the development
 branch of `kicad-python` may sometimes move the submodule pointer to non-tagged commits during the
 course of development.  If you are using this library from source rather than from PyPI, remember
 to keep the submodule updated and to test against a suitable build of KiCad, which may need to be
-a nightly or testing build in some situations.
+a nightly or testing build in some situations.  You can use the method `KiCad.check_version` to
+make sure you are using a compatible version of `kicad-python` for your installed version of KiCad.
 
 ## Getting Started
 
