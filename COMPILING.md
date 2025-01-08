@@ -10,6 +10,9 @@ in your PATH.
 
 First, run `git submodule update --init` to add KiCad's source code as a submodule.
 
+NOTE: We recommend that you run `git config submodule.recurse true` in this repo so that
+      when you run `git pull` in the future, the submodule will be kept up-to-date.
+
 Next install protobuf-compiler
 
 then, install `poetry` and use it to install the required Python dependencies
