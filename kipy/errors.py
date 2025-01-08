@@ -22,6 +22,8 @@ class ConnectionError(Exception):
     pass
 
 class ApiError(Exception):
+    """Raised when KiCad returns an error from an API call.  This indicates that the communcation
+    was successful, but the API call failed for some reason."""
     def __init__(self, message: str, raw_message: str = "",
                  code: ApiStatusCode.ValueType = ApiStatusCode.AS_BAD_REQUEST):
          super().__init__(message)

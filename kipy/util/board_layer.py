@@ -118,9 +118,14 @@ def is_copper_layer(layer: BoardLayer.ValueType) -> bool:
     }
 
 def canonical_name(layer: BoardLayer.ValueType) -> str:
+    """Returns the canonical name of the given layer identifier.  This is the name that is used in
+    the KiCad user interface if the user has not set a custom layer name, and in the KiCad file
+    formats in various places."""
     return CANONICAL_LAYER_NAMES.get(layer, "Unknown")
 
 def layer_from_canonical_name(name: str) -> BoardLayer.ValueType:
+    """Returns the layer identifier for the given canonical layer name, or BL_UNKNOWN if the name
+    is not recognized."""
     for layer, layer_name in CANONICAL_LAYER_NAMES.items():
         if layer_name == name:
             return layer
