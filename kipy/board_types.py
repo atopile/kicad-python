@@ -668,7 +668,7 @@ class ThermalSpokeSettings(Wrapper):
     @property
     def width(self) -> Optional[int]:
         if self._proto.HasField("width"):
-            return self._proto.width
+            return self._proto.width.value_nm
         return None
 
     @width.setter
@@ -676,7 +676,7 @@ class ThermalSpokeSettings(Wrapper):
         if width is None:
             self._proto.ClearField("width")
         else:
-            self._proto.width = width
+            self._proto.width.value_nm = width
 
     @property
     def angle(self) -> Angle:
@@ -689,7 +689,7 @@ class ThermalSpokeSettings(Wrapper):
     @property
     def gap(self) -> Optional[int]:
         if self._proto.HasField("gap"):
-            return self._proto.gap
+            return self._proto.gap.value_nm
         return None
 
     @gap.setter
@@ -697,7 +697,7 @@ class ThermalSpokeSettings(Wrapper):
         if gap is None:
             self._proto.ClearField("gap")
         else:
-            self._proto.gap = gap
+            self._proto.gap.value_nm = gap
 
 
 class ZoneConnectionSettings(Wrapper):
