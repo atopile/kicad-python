@@ -71,6 +71,15 @@ plugins, copy or symlink them into the appropriate plugins path in order for KiC
 
 ## Release History
 
+### 0.1.2 (January 17, 2025)
+
+- Updates for KiCad 9.0.0-rc2 release
+- Fixes to plugin examples
+- Add support for various project settings, board stackup, board file management
+- Add helpers for board layer name conversions
+- Change thermal spoke settings to match updated KiCad API
+- Documentation improvements
+
 ### 0.1.1 (December 24, 2024)
 
 - Bump dependency versions to fix compilation with newer protoc
