@@ -1,2 +1,2 @@
-kicad-python>=0.1.0a1
+kicad-python>=0.1.2
 wxPython~=4.2
