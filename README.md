@@ -77,6 +77,7 @@ plugins, copy or symlink them into the appropriate plugins path in order for KiC
 - Fix util.board_layer.canonical_name names for technical layers
 - Add board item selection management APIs
 - Fix requirements.txt files in sample plugins
+- Relicense as MIT
 
 ### 0.1.2 (January 17, 2025)
 
