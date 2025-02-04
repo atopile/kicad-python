@@ -100,7 +100,3 @@ plugins, copy or symlink them into the appropriate plugins path in order for KiC
 First formal release of the new IPC-API version of this package.  Contains support for most of the
 KiCad API functionality that is currently exposed, which is focused around the PCB editor to enable
 a transition path from existing SWIG-based plugins.
-
-Caveats / Known Issues:
-
-- Compatibility limited to Python 3.9 ~ 3.12 due to `pynng` not yet being updated for 3.13
