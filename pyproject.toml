@@ -24,8 +24,8 @@ protobuf = "^5.29"
 pynng = "^0.8.0"
 
 [tool.poetry.group.dev.dependencies]
-nox = "^2024.10.9"
-ruff = "^0.8"
+nox = "^2025.2.9"
+ruff = "^0.9"
 protoletariat = "^3.3"
 mypy-protobuf = "^3.6"
 poetry-plugin-export = "^1.8"
