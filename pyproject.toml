@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "kicad-python"
-version = "0.1.2+dev"
+version = "0.2.0"
 description = "KiCad API Python Bindings"
 authors = ["The KiCad Development Team"]
 homepage = "https://kicad.org/"
