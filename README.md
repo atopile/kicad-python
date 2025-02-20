@@ -59,8 +59,11 @@ This should print out the version of KiCad you have connected to.
 
 ## Documentation
 
-There is no documentation separate from the code comments and examples yet, sorry!  This will be
-more of a priority once the KiCad 9 release is stable.
+The documentation created from this repository (via the `docs` directory and the docstrings in the
+source code) is hosted at https://docs.kicad.org/kicad-python-main
+
+Many things are still not documented or underdocumented -- contributions that expand the
+documentation or add docstrings are welcomed.
 
 ## Examples
 
