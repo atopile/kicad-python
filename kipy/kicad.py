@@ -88,7 +88,6 @@ class KiCadVersion:
 
         return (
             (self.major, self.minor, self.patch) == (other.major, other.minor, other.patch)
-            and (self.full_version == other.full_version)
             )
 
     def __lt__(self, other):

@@ -31,7 +31,7 @@ def pre_build():
     generate_protos(proto_in, proto_out)
 
     os.chdir(os.path.join(os.getcwd(), "kicad"))
-    stream = os.popen('git describe')
+    stream = os.popen('git describe --long')
     git_description = stream.read().strip()
     version_file_path = os.path.join(os.getcwd(), "../kipy/kicad_api_version.py")
     with open(version_file_path, 'w') as version_file:
