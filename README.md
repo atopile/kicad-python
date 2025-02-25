@@ -78,6 +78,7 @@ plugins, copy or symlink them into the appropriate plugins path in order for KiC
 
 - Add support for footprint mounting style attribute (#19)
 - Added `visible` property to `Field` and deprecate it from `TextAttributes` to match KiCad changes
+- Add missing board layers User.10 through User.45
 
 ### 0.2.0 (February 19, 2025)
 
