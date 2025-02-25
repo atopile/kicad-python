@@ -51,12 +51,14 @@ from kipy.geometry import (
     arc_end_angle,
 )
 from kipy.util import unpack_any
-from kipy.util.board_layer import is_copper_layer
+from kipy.util.board_layer import is_copper_layer, iter_copper_layers
 from kipy.util.units import from_mm
 from kipy.wrapper import Item, Wrapper
 
 # Re-exported protobuf enum types
 from kipy.proto.board.board_types_pb2 import (  # noqa
+    PSS_CIRCLE,
+    PST_NORMAL,
     BoardLayer,
     ChamferedRectCorners,
     DrillShape,
@@ -1015,6 +1017,26 @@ class PadStack(BoardItem):
     def type(self, type: board_types_pb2.PadStackType.ValueType):
         self._proto.type = type
 
+        layer_map = {layer.layer: layer for layer in self._proto.copper_layers}
+
+        required_layers = {
+            board_types_pb2.PadStackType.PST_NORMAL: [BoardLayer.BL_F_Cu],
+            board_types_pb2.PadStackType.PST_FRONT_INNER_BACK: [
+                BoardLayer.BL_F_Cu,
+                BoardLayer.BL_In1_Cu,
+                BoardLayer.BL_B_Cu,
+            ],
+            board_types_pb2.PadStackType.PST_CUSTOM: [layer for layer in iter_copper_layers()]
+        }.get(type, [])
+
+        for layer in layer_map.keys():
+            if layer not in required_layers:
+                self._proto.copper_layers.remove(layer_map[layer])
+
+        for layer in required_layers:
+            if layer not in layer_map:
+                self._add_copper_layer(layer)
+
     @property
     def layers(self) -> Sequence[BoardLayer.ValueType]:
         return self._proto.layers
@@ -1082,6 +1104,10 @@ class PadStack(BoardItem):
             return self.back_outer_layers.solder_mask_mode == SolderMaskMode.SMM_MASKED
         return False
 
+    def _add_copper_layer(self, layer: BoardLayer.ValueType) -> board_types_pb2.PadStackLayer:
+        self._proto.copper_layers.append(board_types_pb2.PadStackLayer())
+        self._proto.copper_layers[-1].layer = layer
+        return self._proto.copper_layers[-1]
 
 class Pad(BoardItem):
     def __init__(self, proto: Optional[board_types_pb2.Pad] = None):
@@ -1089,6 +1115,8 @@ class Pad(BoardItem):
 
         if proto is not None:
             self._proto.CopyFrom(proto)
+        else:
+            self.padstack.type = PST_NORMAL
 
     @property
     def id(self) -> KIID:
@@ -1133,6 +1161,9 @@ class Via(BoardItem):
 
         if proto is not None:
             self._proto.CopyFrom(proto)
+        else:
+            self.type = ViaType.VT_THROUGH
+            self.padstack.type = PST_NORMAL
 
     def __repr__(self) -> str:
         return (
@@ -1168,15 +1199,55 @@ class Via(BoardItem):
 
     @property
     def type(self) -> ViaType.ValueType:
+        """The type of the via (through, blind/buried, or micro)
+
+        Setting this property will also update the padstack drill start and end layers as a
+        side effect."""
         return self._proto.type
 
     @type.setter
     def type(self, type: ViaType.ValueType):
         self._proto.type = type
 
+        if (
+            type == ViaType.VT_THROUGH
+            or self.padstack.drill.start_layer == BoardLayer.BL_UNKNOWN
+            or self.padstack.drill.end_layer == BoardLayer.BL_UNKNOWN
+        ):
+            self.padstack.drill.start_layer = BoardLayer.BL_F_Cu
+            self.padstack.drill.end_layer = BoardLayer.BL_B_Cu
+
     @property
     def padstack(self) -> PadStack:
         return PadStack(proto_ref=self._proto.pad_stack)
+
+    @property
+    def diameter(self) -> int:
+        """A helper property to get or set the diameter of the via on all copper layers.
+
+        Warning: only makes sense if the via's padstack mode is PST_NORMAL.  This will return the
+        pad diameter on the front copper layer otherwise.  Setting this property will set the
+        padstack mode to PST_NORMAL as a side-effect.
+
+        To get or set the diameter for other padstack types, use the padstack property directly."""
+        if len(self.padstack.copper_layers) == 0:
+            raise ValueError("Unexpected empty padstack for via!")
+
+        return self.padstack.copper_layers[0].size.x
+
+    @diameter.setter
+    def diameter(self, diameter: int):
+        self.padstack.type = PST_NORMAL
+        self.padstack.copper_layers[0].size = Vector2.from_xy(diameter, diameter)
+
+    @property
+    def drill_diameter(self) -> int:
+        """The diameter of the via's drill (KiCad only supports circular drills in vias)"""
+        return self.padstack.drill.diameter.x
+
+    @drill_diameter.setter
+    def drill_diameter(self, diameter: int):
+        self.padstack.drill.diameter = Vector2.from_xy(diameter, diameter)
 
 
 class FootprintAttributes(Wrapper):
