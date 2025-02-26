@@ -657,7 +657,7 @@ class Field(BoardItem):
     @property
     def visible(self) -> bool:
         """
-        .. since:: 0.2.1 with KiCad 9.0.1
+        .. versionadded:: 0.2.1 with KiCad 9.0.1
         """
         return self._proto.visible
 
@@ -1204,7 +1204,7 @@ class Via(BoardItem):
         Setting this property will also update the padstack drill start and end layers as a
         side effect.
 
-        .. since:: 0.2.1 with KiCad 9.0.1
+        .. versionadded:: 0.2.1 with KiCad 9.0.1
         """
         return self._proto.type
 
@@ -1234,7 +1234,7 @@ class Via(BoardItem):
 
         To get or set the diameter for other padstack types, use the padstack property directly.
 
-        .. since:: 0.2.1 with KiCad 9.0.1"""
+        .. versionadded:: 0.2.1 with KiCad 9.0.1"""
         if len(self.padstack.copper_layers) == 0:
             raise ValueError("Unexpected empty padstack for via!")
 
