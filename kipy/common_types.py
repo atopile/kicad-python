@@ -117,7 +117,7 @@ class TextAttributes(Wrapper):
     @deprecated("This property will always return True in KiCad 9, and will be removed in KiCad 10")
     def visible(self) -> bool:
         """
-        .. deprecated:: 0.2.1 removed in KiCad 9.0.1
+        .. deprecated:: 0.3.0 removed in KiCad 9.0.1
         Text items are always visible as of 9.0.1, only Fields can be set to hidden
         """
         return self._proto.visible

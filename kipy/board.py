@@ -614,7 +614,7 @@ class Board:
     def get_origin(self, origin_type: board_commands_pb2.BoardOriginType.ValueType) -> Vector2:
         """Retrieves the specified (grid or drill/place) board origin
 
-        .. versionadded:: 0.2.1"""
+        .. versionadded:: 0.3.0"""
         cmd = board_commands_pb2.GetBoardOrigin()
         cmd.board.CopyFrom(self._doc)
         cmd.type = origin_type
@@ -624,7 +624,7 @@ class Board:
                    origin: Vector2):
         """Sets the specified (grid or drill/place) board origin
 
-        .. versionadded:: 0.2.1"""
+        .. versionadded:: 0.3.0"""
         cmd = board_commands_pb2.SetBoardOrigin()
         cmd.board.CopyFrom(self._doc)
         cmd.type = origin_type

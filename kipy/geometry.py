@@ -49,7 +49,7 @@ class Vector2(Wrapper):
     def from_xy_mm(cls, x_mm: int, y_mm: int):
         """Initialize Vector2 with x and y values in mm
 
-        .. versionadded:: 0.2.1"""
+        .. versionadded:: 0.3.0"""
         proto = types.Vector2()
         proto.x_nm = from_mm(x_mm)
         proto.y_nm = from_mm(y_mm)
@@ -113,7 +113,7 @@ class Vector2(Wrapper):
     def angle_degrees(self) -> float:
         """Returns the angle (direction) of the vector in degrees
 
-        .. versionadded:: 0.2.1
+        .. versionadded:: 0.3.0
         """
         return math.degrees(self.angle())
 
@@ -623,7 +623,7 @@ def arc_radius(start: Vector2, mid: Vector2, end: Vector2) -> float:
 def normalize_angle_degrees(angle: float) -> float:
     """Normalizes an angle to fall within the range [0, 360)
 
-    .. versionadded:: 0.2.1"""
+    .. versionadded:: 0.3.0"""
     while angle < 0.0:
         angle += 360.0
 
@@ -635,7 +635,7 @@ def normalize_angle_degrees(angle: float) -> float:
 def normalize_angle_radians(angle: float) -> float:
     """Normalizes an angle to fall within the range [0, 2*pi)
 
-    .. versionadded:: 0.2.1"""
+    .. versionadded:: 0.3.0"""
     while angle < 0.0:
         angle += 2 * math.pi
 
@@ -671,7 +671,7 @@ def arc_end_angle(start: Vector2, mid: Vector2, end: Vector2) -> Optional[float]
 def arc_start_angle_degrees(start: Vector2, mid: Vector2, end: Vector2) -> Optional[float]:
     """Calculates the arc's starting angle in degrees, normalized to [0, 360)
 
-    .. versionadded:: 0.2.1
+    .. versionadded:: 0.3.0
     """
     center = arc_center(start, mid, end)
     if center is None:
@@ -682,7 +682,7 @@ def arc_start_angle_degrees(start: Vector2, mid: Vector2, end: Vector2) -> Optio
 def arc_end_angle_degrees(start: Vector2, mid: Vector2, end: Vector2) -> Optional[float]:
     """Calculates the arc's ending angle in degrees, normalized to [0, 360)
 
-    .. versionadded:: 0.2.1
+    .. versionadded:: 0.3.0
     """
     center = arc_center(start, mid, end)
     if center is None:
