@@ -1341,6 +1341,14 @@ class Footprint3DModel(Wrapper):
         if proto is not None:
             self._proto.CopyFrom(proto)
 
+    def __repr__(self) -> str:
+        return (
+            f"Footprint3DModel(filename='{self.filename}', "
+            f"visisble={self.visible}, opacity={self.opacity}, "
+            f"rotation=({self.rotation.x}, {self.rotation.y}, {self.rotation.z}), "
+            f"scale=({self.scale.x}, {self.scale.y}, {self.scale.z}))"
+        )
+
     @property
     def filename(self) -> str:
         return self._proto.filename
@@ -1446,6 +1454,11 @@ class Footprint(Wrapper):
             or isinstance(item, BoardTextBox)
             or isinstance(item, Field)
         ]
+
+    @property
+    def models(self) -> Sequence[Footprint3DModel]:
+        """Returns all 3D models in the footprint"""
+        return [item for item in self.items if isinstance(item, Footprint3DModel)]
 
     def add_item(self, item: Wrapper):
         any = Any()
