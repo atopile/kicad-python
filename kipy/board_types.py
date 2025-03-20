@@ -1457,7 +1457,9 @@ class Footprint(Wrapper):
 
     @property
     def models(self) -> Sequence[Footprint3DModel]:
-        """Returns all 3D models in the footprint"""
+        """Returns all 3D models in the footprint
+
+        .. versionadded:: 0.3.0"""
         return [item for item in self.items if isinstance(item, Footprint3DModel)]
 
     def add_item(self, item: Wrapper):
