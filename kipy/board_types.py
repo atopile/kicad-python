@@ -344,9 +344,11 @@ class BoardSegment(BoardShape, Segment):
         self._proto = board_types_pb2.BoardGraphicShape()
 
         if proto is not None:
+            assert proto.shape.WhichOneof("geometry") == "segment"
             self._proto.CopyFrom(proto)
+        else:
+            self._proto.shape.segment.SetInParent()
 
-        assert self._proto.shape.WhichOneof("geometry") == "segment"
         Segment.__init__(self, self._proto.shape)
 
     def __repr__(self) -> str:
@@ -368,9 +370,11 @@ class BoardArc(BoardShape, Arc):
         self._proto = board_types_pb2.BoardGraphicShape()
 
         if proto is not None:
+            assert proto.shape.WhichOneof("geometry") == "arc"
             self._proto.CopyFrom(proto)
+        else:
+            self._proto.shape.arc.SetInParent()
 
-        assert self._proto.shape.WhichOneof("geometry") == "arc"
         Arc.__init__(self, self._proto.shape)
 
     def __repr__(self) -> str:
@@ -392,9 +396,11 @@ class BoardCircle(BoardShape, Circle):
         self._proto = board_types_pb2.BoardGraphicShape()
 
         if proto is not None:
+            assert proto.shape.WhichOneof("geometry") == "circle"
             self._proto.CopyFrom(proto)
+        else:
+            self._proto.shape.circle.SetInParent()
 
-        assert self._proto.shape.WhichOneof("geometry") == "circle"
         Circle.__init__(self, self._proto.shape)
 
     def __repr__(self) -> str:
@@ -416,9 +422,11 @@ class BoardRectangle(BoardShape, Rectangle):
         self._proto = board_types_pb2.BoardGraphicShape()
 
         if proto is not None:
+            assert proto.shape.WhichOneof("geometry") == "rectangle"
             self._proto.CopyFrom(proto)
+        else:
+            self._proto.shape.rectangle.SetInParent()
 
-        assert self._proto.shape.WhichOneof("geometry") == "rectangle"
         Rectangle.__init__(self, self._proto.shape)
 
     def __repr__(self) -> str:
@@ -440,9 +448,11 @@ class BoardPolygon(BoardShape, Polygon):
         self._proto = board_types_pb2.BoardGraphicShape()
 
         if proto is not None:
+            assert proto.shape.WhichOneof("geometry") == "polygon"
             self._proto.CopyFrom(proto)
+        else:
+            self._proto.shape.polygon.SetInParent()
 
-        assert self._proto.shape.WhichOneof("geometry") == "polygon"
         Polygon.__init__(self, self._proto.shape)
 
     def __repr__(self) -> str:
@@ -464,9 +474,11 @@ class BoardBezier(BoardShape, Bezier):
         self._proto = board_types_pb2.BoardGraphicShape()
 
         if proto is not None:
+            assert proto.shape.WhichOneof("geometry") == "bezier"
             self._proto.CopyFrom(proto)
+        else:
+            self._proto.shape.bezier.SetInParent()
 
-        assert self._proto.shape.WhichOneof("geometry") == "bezier"
         Bezier.__init__(self, self._proto.shape)
 
     def __repr__(self) -> str:
@@ -1948,9 +1960,10 @@ class AlignedDimension(Dimension):
         self._proto = board_types_pb2.Dimension()
 
         if proto is not None:
+            assert proto.WhichOneof("dimension_style") == "aligned"
             self._proto.CopyFrom(proto)
-
-        assert self._proto.WhichOneof("dimension_style") == "aligned"
+        else:
+            self._proto.aligned.SetInParent()
 
     def __repr__(self) -> str:
         return (
@@ -1996,9 +2009,10 @@ class OrthogonalDimension(Dimension):
         self._proto = board_types_pb2.Dimension()
 
         if proto is not None:
+            assert proto.WhichOneof("dimension_style") == "orthogonal"
             self._proto.CopyFrom(proto)
-
-        assert self._proto.WhichOneof("dimension_style") == "orthogonal"
+        else:
+            self._proto.orthogonal.SetInParent()
 
     def __repr__(self) -> str:
         return f"OrthogonalDimension(start={self.start}, end={self.end}, alignment={self.alignment})"
@@ -2048,9 +2062,10 @@ class RadialDimension(Dimension):
         self._proto = board_types_pb2.Dimension()
 
         if proto is not None:
+            assert proto.WhichOneof("dimension_style") == "radial"
             self._proto.CopyFrom(proto)
-
-        assert self._proto.WhichOneof("dimension_style") == "radial"
+        else:
+            self._proto.radial.SetInParent()
 
     def __repr__(self) -> str:
         return (
@@ -2088,9 +2103,10 @@ class LeaderDimension(Dimension):
         self._proto = board_types_pb2.Dimension()
 
         if proto is not None:
+            assert proto.WhichOneof("dimension_style") == "leader"
             self._proto.CopyFrom(proto)
-
-        assert self._proto.WhichOneof("dimension_style") == "leader"
+        else:
+            self._proto.leader.SetInParent()
 
     def __repr__(self) -> str:
         return (
@@ -2128,9 +2144,10 @@ class CenterDimension(Dimension):
         self._proto = board_types_pb2.Dimension()
 
         if proto is not None:
+            assert proto.WhichOneof("dimension_style") == "center"
             self._proto.CopyFrom(proto)
-
-        assert self._proto.WhichOneof("dimension_style") == "center"
+        else:
+            self._proto.center.SetInParent()
 
     def __repr__(self) -> str:
         return f"CenterDimension(center={self.center}, end={self.end})"
