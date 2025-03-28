@@ -86,6 +86,7 @@ plugins, copy or symlink them into the appropriate plugins path in order for KiC
 - Add `ArcTrack.length` (Thanh Duong, !12)
 - Add `Footprint.models` (#31)
 - Fix ability to create new graphic shapes on boards
+- Fix the return value of `Board.update_items` and document it (#35)
 
 ### 0.2.0 (February 19, 2025)
 

@@ -447,10 +447,13 @@ class Board:
         command = editor_commands_pb2.SaveSelectionToString()
         return self._kicad.send(command, editor_commands_pb2.SavedSelectionResponse).contents
 
-    def update_items(self, items: Union[BoardItem, Sequence[BoardItem]]):
+    def update_items(self, items: Union[BoardItem, Sequence[BoardItem]]) -> List[BoardItem]:
         """Updates the properties of one or more items on the board.  The items must already exist
         on the board, and are matched by internal UUID.  All other properties of the items are
-        updated from those passed in this call."""
+        updated from those passed in this call.
+
+        Returns the updated items, which may be different from the input items if any updates
+        failed to apply (for example, if any properties were out of range and were clamped)"""
         command = UpdateItems()
         command.header.document.CopyFrom(self._doc)
 
@@ -460,12 +463,16 @@ class Board:
             command.items.extend([pack_any(i.proto) for i in items])
 
         if len(command.items) == 0:
-            return
+            return []
 
-        return [
-            unwrap(result.item)
-            for result in self._kicad.send(command, UpdateItemsResponse).updated_items
-        ]
+        return self._to_concrete_items(
+            [
+                unwrap(result.item)
+                for result in self._kicad.send(
+                    command, UpdateItemsResponse
+                ).updated_items
+            ]
+        )
 
     def remove_items(self, items: Union[BoardItem, Sequence[BoardItem]]):
         """Deletes one or more items from the board"""
