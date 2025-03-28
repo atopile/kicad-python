@@ -85,6 +85,7 @@ plugins, copy or symlink them into the appropriate plugins path in order for KiC
 - Add `board.get_origin` and `board.set_origin` (#20)
 - Add `ArcTrack.length` (Thanh Duong, !12)
 - Add `Footprint.models` (#31)
+- Fix ability to create new graphic shapes on boards
 
 ### 0.2.0 (February 19, 2025)
 
