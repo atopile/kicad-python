@@ -349,7 +349,7 @@ class BoardSegment(BoardShape, Segment):
         else:
             self._proto.shape.segment.SetInParent()
 
-        Segment.__init__(self, self._proto.shape)
+        Segment.__init__(self, proto_ref=self._proto.shape)
 
     def __repr__(self) -> str:
         net_repr = (
@@ -375,7 +375,7 @@ class BoardArc(BoardShape, Arc):
         else:
             self._proto.shape.arc.SetInParent()
 
-        Arc.__init__(self, self._proto.shape)
+        Arc.__init__(self, proto_ref=self._proto.shape)
 
     def __repr__(self) -> str:
         net_repr = (
@@ -401,7 +401,7 @@ class BoardCircle(BoardShape, Circle):
         else:
             self._proto.shape.circle.SetInParent()
 
-        Circle.__init__(self, self._proto.shape)
+        Circle.__init__(self, proto_ref=self._proto.shape)
 
     def __repr__(self) -> str:
         net_repr = (
@@ -427,7 +427,7 @@ class BoardRectangle(BoardShape, Rectangle):
         else:
             self._proto.shape.rectangle.SetInParent()
 
-        Rectangle.__init__(self, self._proto.shape)
+        Rectangle.__init__(self, proto_ref=self._proto.shape)
 
     def __repr__(self) -> str:
         net_repr = (
@@ -453,7 +453,7 @@ class BoardPolygon(BoardShape, Polygon):
         else:
             self._proto.shape.polygon.SetInParent()
 
-        Polygon.__init__(self, self._proto.shape)
+        Polygon.__init__(self, proto_ref=self._proto.shape)
 
     def __repr__(self) -> str:
         net_repr = (
@@ -479,7 +479,7 @@ class BoardBezier(BoardShape, Bezier):
         else:
             self._proto.shape.bezier.SetInParent()
 
-        Bezier.__init__(self, self._proto.shape)
+        Bezier.__init__(self, proto_ref=self._proto.shape)
 
     def __repr__(self) -> str:
         net_repr = (

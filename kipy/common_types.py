@@ -476,8 +476,9 @@ class GraphicShape(Wrapper):
 class Segment(GraphicShape):
     """Represents a base graphic segment (not a board or schematic item)"""
 
-    def __init__(self, proto: Optional[base_types_pb2.GraphicShape] = None):
-        self._graphic_proto = base_types_pb2.GraphicShape()
+    def __init__(self, proto: Optional[base_types_pb2.GraphicShape] = None,
+                 proto_ref: Optional[base_types_pb2.GraphicShape] = None):
+        self._graphic_proto = proto_ref if proto_ref is not None else base_types_pb2.GraphicShape()
 
         if proto is not None:
             self._graphic_proto.CopyFrom(proto)
@@ -511,8 +512,9 @@ class Segment(GraphicShape):
 class Arc(GraphicShape):
     """Represents a generic graphical arc (not a board or schematic item)"""
 
-    def __init__(self, proto: Optional[base_types_pb2.GraphicShape] = None):
-        self._graphic_proto = base_types_pb2.GraphicShape()
+    def __init__(self, proto: Optional[base_types_pb2.GraphicShape] = None,
+                 proto_ref: Optional[base_types_pb2.GraphicShape] = None):
+        self._graphic_proto = proto_ref if proto_ref is not None else base_types_pb2.GraphicShape()
 
         if proto is not None:
             self._graphic_proto.CopyFrom(proto)
@@ -584,8 +586,9 @@ class Arc(GraphicShape):
 class Circle(GraphicShape):
     """Represents a graphic circle (not a board or schematic item)"""
 
-    def __init__(self, proto: Optional[base_types_pb2.GraphicShape] = None):
-        self._graphic_proto = base_types_pb2.GraphicShape()
+    def __init__(self, proto: Optional[base_types_pb2.GraphicShape] = None,
+                 proto_ref: Optional[base_types_pb2.GraphicShape] = None):
+        self._graphic_proto = proto_ref if proto_ref is not None else base_types_pb2.GraphicShape()
 
         if proto is not None:
             self._graphic_proto.CopyFrom(proto)
@@ -623,8 +626,9 @@ class Circle(GraphicShape):
 class Rectangle(GraphicShape):
     """Represents a graphic rectangle (not a board or schematic item)"""
 
-    def __init__(self, proto: Optional[base_types_pb2.GraphicShape] = None):
-        self._graphic_proto = base_types_pb2.GraphicShape()
+    def __init__(self, proto: Optional[base_types_pb2.GraphicShape] = None,
+                 proto_ref: Optional[base_types_pb2.GraphicShape] = None):
+        self._graphic_proto = proto_ref if proto_ref is not None else base_types_pb2.GraphicShape()
 
         if proto is not None:
             self._graphic_proto.CopyFrom(proto)
@@ -655,8 +659,9 @@ class Rectangle(GraphicShape):
 class Polygon(GraphicShape):
     """Represents a graphic polygon (not a board or schematic item)"""
 
-    def __init__(self, proto: Optional[base_types_pb2.GraphicShape] = None):
-        self._graphic_proto = base_types_pb2.GraphicShape()
+    def __init__(self, proto: Optional[base_types_pb2.GraphicShape] = None,
+                 proto_ref: Optional[base_types_pb2.GraphicShape] = None):
+        self._graphic_proto = proto_ref if proto_ref is not None else base_types_pb2.GraphicShape()
 
         if proto is not None:
             self._graphic_proto.CopyFrom(proto)
@@ -681,8 +686,9 @@ class Polygon(GraphicShape):
 class Bezier(GraphicShape):
     """Represents a graphic bezier curve (not a board or schematic item)"""
 
-    def __init__(self, proto: Optional[base_types_pb2.GraphicShape] = None):
-        self._graphic_proto = base_types_pb2.GraphicShape()
+    def __init__(self, proto: Optional[base_types_pb2.GraphicShape] = None,
+                 proto_ref: Optional[base_types_pb2.GraphicShape] = None):
+        self._graphic_proto = proto_ref if proto_ref is not None else base_types_pb2.GraphicShape()
 
         if proto is not None:
             self._graphic_proto.CopyFrom(proto)
