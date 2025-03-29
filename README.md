@@ -74,7 +74,7 @@ plugins, copy or symlink them into the appropriate plugins path in order for KiC
 
 ## Release History
 
-### 0.3.0 (TBD)
+### 0.3.0 (March 29, 2025)
 
 - Add support for footprint mounting style attribute (#19) (Thanh Duong, !10)
 - Added `visible` property to `Field` and deprecate it from `TextAttributes` to match KiCad changes
