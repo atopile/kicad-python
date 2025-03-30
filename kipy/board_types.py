@@ -49,6 +49,7 @@ from kipy.geometry import (
     arc_radius,
     arc_start_angle,
     arc_end_angle,
+    normalize_angle_radians,
 )
 from kipy.util import unpack_any
 from kipy.util.board_layer import is_copper_layer, iter_copper_layers
@@ -280,7 +281,7 @@ class ArcTrack(BoardItem):
         if start is None or end is None:
             return (self.end - self.start).length()
 
-        delta_angle = abs(end - start)
+        delta_angle = normalize_angle_radians(end - start)
         return delta_angle*self.radius()
 
     def bounding_box(self) -> Box2:
