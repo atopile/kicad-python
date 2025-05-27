@@ -36,6 +36,7 @@ from kipy.common_types import (
     Rectangle,
     Polygon,
     Bezier,
+    SheetPath,
     Text,
     TextBox,
 )
@@ -1746,6 +1747,15 @@ class FootprintInstance(BoardItem):
             self.datasheet_field,
             self.description_field,
         ]
+
+    @property
+    def sheet_path(self) -> SheetPath:
+        """
+        The path to this footprint instance's corresponding symbol schematic sheet
+
+        .. versionadded:: 0.4.0 with KiCad 9.0.3
+        """
+        return SheetPath(self._proto.symbol_path)
 
 
 class ZoneFilledPolygons(Wrapper):

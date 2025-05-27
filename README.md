@@ -79,6 +79,7 @@ plugins, copy or symlink them into the appropriate plugins path in order for KiC
 - Fix ability to move and rotate footprints
 - Fix ArcTrack length calculation (Quentin Freimanis, !13)
 - Make it possible to add new `BoardPolygon`s in a more ergonomic way
+- Add `FootprintInstance.sheet_path` property (#37)
 
 ### 0.3.0 (March 29, 2025)
 

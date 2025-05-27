@@ -50,6 +50,35 @@ class Commit:
         return self._id
 
 
+class SheetPath(Wrapper):
+    """Represents the path to a unique sheet instance or symbol instance in a schematic"""
+
+    def __init__(
+        self,
+        proto: Optional[types.SheetPath] = None,
+        proto_ref: Optional[types.SheetPath] = None,
+    ):
+        self._proto = proto_ref if proto_ref is not None else types.SheetPath()
+
+        if proto is not None:
+            self._proto.CopyFrom(proto)
+
+    @property
+    def path(self) -> list[KIID]:
+        return list(self._proto.path)
+
+    @path.setter
+    def path(self, path: list[KIID]):
+        del self._proto.path[:]
+        self._proto.path.extend(path)
+
+    @property
+    def path_human_readable(self) -> str:
+        """The sheet path with human-readable sheet names.  May not be available in all contexts
+        (for example, is not present in contexts where the SheetPath is sourced from a board
+        object)"""
+        return self._proto.path_human_readable
+
 class Color(Wrapper):
     def __init__(
         self,
