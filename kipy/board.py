@@ -742,6 +742,55 @@ class Board:
             if p is not None
         ]
 
+    def check_padstack_presence_on_layers(
+        self,
+        items: Union[BoardItem, Iterable[BoardItem]],
+        layers: Union[board_types_pb2.BoardLayer.ValueType, Iterable[board_types_pb2.BoardLayer.ValueType]]
+    ) -> Dict[BoardItem, Dict[board_types_pb2.BoardLayer.ValueType, bool]]:
+        """Checks if the given items with padstacks (pads or vias) have content on the given layers.
+
+        :param items: The items to check (one or more pads or vias).
+        :param layers: The layer or layers to check for padstack presence.
+        :return: A dictionary mapping each item to a dictionary of layers and their presence on
+                 the given layer.
+
+        .. versionadded:: 0.4.0 with KiCad 9.0.3
+        """
+        cmd = board_commands_pb2.CheckPadstackPresenceOnLayers()
+        cmd.board.CopyFrom(self._doc)
+
+        items_map = {}
+
+        if isinstance(items, BoardItem):
+            cmd.items.append(items.id)
+            items_map[items.id.value] = items
+        else:
+            cmd.items.extend([item.id for item in items])
+            items_map.update({item.id.value: item for item in items})
+
+        if isinstance(layers, int):
+            cmd.layers.append(layers)
+        else:
+            cmd.layers.extend(layers)
+
+        response = self._kicad.send(cmd, board_commands_pb2.PadstackPresenceResponse)
+
+        result = {}
+        for entry in response.entries:
+            if entry.item.value not in items_map:
+                continue
+
+            item = items_map[entry.item.value]
+            layer = entry.layer
+            presence = entry.presence is board_commands_pb2.PadstackPresence.PSP_PRESENT
+
+            if item not in result:
+                result[item] = {}
+
+            result[item][layer] = presence
+
+        return result
+
     def interactive_move(self, items: Union[KIID, Iterable[KIID]]):
         """Initiates an interactive move operation on one or more items on the board.  The user
         will be able to move the items interactively in the KiCad editor.  This is a blocking
