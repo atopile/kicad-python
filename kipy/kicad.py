@@ -70,7 +70,11 @@ class KiCadVersion:
     def from_git_describe(describe: str) -> 'KiCadVersion':
         parts = describe.split('-')
         version_part = parts[0]
-        major, minor, patch = map(int, version_part.split('.'))
+
+        try:
+            major, minor, patch = map(int, version_part.split('.'))
+        except ValueError:
+            return KiCadVersion(0, 0, 0, describe)
 
         if len(parts) > 1:
             additional_info = '-'.join(parts[1:])
