@@ -20,7 +20,7 @@
 
 import pytest
 import math
-from kipy.geometry import Box2, Vector2, arc_center, arc_angle
+from kipy.geometry import Box2, Vector2, arc_center, arc_angle, normalize_angle_pi_radians
 
 def test_arc_center_circle():
     start = Vector2.from_xy(0, 0)
@@ -113,3 +113,15 @@ def test_arc_angle_zero():
     end = Vector2.from_xy(1000, 0)
     angle = arc_angle(start, mid, end)
     assert angle == 0
+
+def test_normalize_angle_pi_radians():
+    """Test normalization of angles to the range (-pi, pi]"""
+    assert normalize_angle_pi_radians(0) == 0
+    assert normalize_angle_pi_radians(math.pi) == math.pi
+    assert normalize_angle_pi_radians(-math.pi) == math.pi
+    assert normalize_angle_pi_radians(2 * math.pi) == 0
+    assert normalize_angle_pi_radians(-2 * math.pi) == 0
+    assert normalize_angle_pi_radians(math.pi / 2) == math.pi / 2
+    assert normalize_angle_pi_radians(-math.pi / 2) == -math.pi / 2
+    assert normalize_angle_pi_radians(3 * math.pi / 2) == -math.pi / 2
+    assert normalize_angle_pi_radians(-3 * math.pi / 2) == math.pi / 2
