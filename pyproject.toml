@@ -24,6 +24,7 @@ python = "<4.0,>=3.9"
 protobuf = "^5.29"
 pynng = "^0.8.0"
 # 3.10: TypeAlias (mypy-protobuf generated code)
+# 3.11: Self
 # 3.13: @deprecated
 typing-extensions = { version = ">= 4.13.2", markers = "python_version < '3.13'" }
 

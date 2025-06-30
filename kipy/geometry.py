@@ -20,11 +20,18 @@
 
 from __future__ import annotations
 
+import sys
 from typing import Optional, Union
 import math
 from kipy.proto.common import types
 from kipy.util import from_mm
 from kipy.wrapper import Wrapper
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
+
 
 class Vector2(Wrapper):
     """Wraps a kiapi.common.types.Vector2, aka VECTOR2I"""
@@ -38,7 +45,7 @@ class Vector2(Wrapper):
         return f"Vector2({self.x}, {self.y})"
 
     @classmethod
-    def from_xy(cls, x_nm: int, y_nm: int):
+    def from_xy(cls, x_nm: int, y_nm: int) -> Self:
         """Initialize Vector2 with x and y values in nanometers"""
         proto = types.Vector2()
         proto.x_nm = x_nm
@@ -46,7 +53,7 @@ class Vector2(Wrapper):
         return cls(proto)
 
     @classmethod
-    def from_xy_mm(cls, x_mm: float, y_mm: float):
+    def from_xy_mm(cls, x_mm: float, y_mm: float) -> Self:
         """Initialize Vector2 with x and y values in mm
 
         .. versionadded:: 0.3.0"""
@@ -150,7 +157,7 @@ class Vector3D(Wrapper):
         return f"Vector3D({self.x}, {self.y}, {self.z})"
 
     @classmethod
-    def from_xyz(cls, x_nm: float, y_nm: float, z_nm: float):
+    def from_xyz(cls, x_nm: float, y_nm: float, z_nm: float) -> Self:
         """Initialize Vector3D with x, y, and z values in nanometers"""
         proto = types.Vector3D()
         proto.x_nm = x_nm
@@ -240,17 +247,17 @@ class Box2:
         return f"Box2(pos={self.pos}, size={self.size})"
 
     @classmethod
-    def from_xywh(cls, x_nm: int, y_nm: int, w_nm: int, h_nm: int):
+    def from_xywh(cls, x_nm: int, y_nm: int, w_nm: int, h_nm: int) -> Self:
         pos = Vector2.from_xy(x_nm, y_nm)
         size = Vector2.from_xy(w_nm, h_nm)
         return cls(pos._proto, size._proto)
 
     @classmethod
-    def from_pos_size(cls, pos: Vector2, size: Vector2):
+    def from_pos_size(cls, pos: Vector2, size: Vector2) -> Self:
         return cls(pos._proto, size._proto)
 
     @classmethod
-    def from_proto( cls, other: types.Box2):
+    def from_proto( cls, other: types.Box2) -> Self:
         return cls(other.position, other.size)
 
     @property
@@ -306,7 +313,7 @@ class Angle(Wrapper):
         return f"Angle({self.degrees})"
 
     @classmethod
-    def from_degrees(cls, degrees: float):
+    def from_degrees(cls, degrees: float) -> Self:
         """Initialize Angle with a value in degrees"""
         proto = types.Angle()
         proto.value_degrees = degrees
