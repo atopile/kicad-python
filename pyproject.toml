@@ -39,7 +39,7 @@ pytest = "^8.3.4"
 
 [build-system]
 requires = [
-    "poetry-core",
+    "poetry-core>=2.0.0,<3.0.0",
     "protoletariat == 3.3.*",
     "setuptools",
     "mypy-protobuf == 3.6.*"
