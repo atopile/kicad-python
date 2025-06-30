@@ -86,7 +86,7 @@ plugins, copy or symlink them into the appropriate plugins path in order for KiC
 - Add `py.typed` type hinting indicator file (John Hagen, !16)
 - Fix `Vector2.from_xy_mm` type annotations (John Hagen, !17)
 - Add `Arc.angle` and `ArcTrack.angle`; some arc angle utilities (Quentin Freimanis, !14)
-- Add `remove_items_by_id` (!20)
+- Add `remove_items_by_id` (Anthonypark, !20)
 
 ### 0.3.0 (March 29, 2025)
 
