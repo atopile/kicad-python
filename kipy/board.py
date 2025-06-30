@@ -489,6 +489,21 @@ class Board:
 
         self._kicad.send(command, DeleteItemsResponse)
 
+    def remove_items_by_id(self, items: Union[KIID, Sequence[KIID]]):
+        """Deletes one or more items from the board"""
+        command = DeleteItems()
+        command.header.document.CopyFrom(self._doc)
+
+        if isinstance(items, KIID):
+            command.item_ids.append(items)
+        else:
+            command.item_ids.extend(items)
+
+        if len(command.item_ids) == 0:
+            return
+
+        self._kicad.send(command, DeleteItemsResponse)
+
     def get_nets(
         self, netclass_filter: Optional[Union[str, Sequence[str]]] = None
     ) -> Sequence[Net]:
