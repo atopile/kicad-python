@@ -7,7 +7,10 @@ The KiCad IPC API can be considered in "public beta" state with the release of K
 planned for on or around February 1, 2025).  The existing SWIG-based Python bindings for KiCad's
 PCB editor still exist in KiCad 9, but are in maintenance mode and will not be expanded.
 
-For more information about the IPC API, please see the [KiCad developer documentation](https://dev-docs.kicad.org/en/apis-and-binding/ipc-api/index.html).  Specific documentation for developing add-ons is [also available](https://dev-docs.kicad.org/en/apis-and-binding/ipc-api/for-addon-developers/index.html).
+For more information about the IPC API, please see the
+[KiCad developer documentation](https://dev-docs.kicad.org/en/apis-and-binding/ipc-api/index.html). 
+Specific documentation for developing add-ons is
+[also available](https://dev-docs.kicad.org/en/apis-and-binding/ipc-api/for-addon-developers/index.html).
 
 > Note: Version 0.0.2 and prior of this package are an obsolete earlier effort and are unrelated to
 > this codebase.
