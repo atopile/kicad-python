@@ -1282,7 +1282,19 @@ class Pad(BoardItem):
 
     @property
     def pad_type(self) -> PadType.ValueType:
+        """
+        The type of the pad (PTH, NPTH, SMD, or edge connector).  Note that there is not a direct
+        mapping between pad type and padstack properties; it is currently up to the user to ensure
+        that the value of this property and the padstack properties are consistent.
+        """
         return self._proto.type
+
+    @pad_type.setter
+    def pad_type(self, pad_type: PadType.ValueType):
+        """
+        .. versionadded:: 0.4.0 (setter)
+        """
+        self._proto.type = pad_type
 
     @property
     def padstack(self) -> PadStack:

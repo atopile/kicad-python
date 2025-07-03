@@ -91,6 +91,7 @@ plugins, copy or symlink them into the appropriate plugins path in order for KiC
 - Add `Arc.angle` and `ArcTrack.angle`; some arc angle utilities (Quentin Freimanis, !14)
 - Add `remove_items_by_id` (Anthonypark, !20)
 - Allow assigning nets to `Zone` (#62)
+- Allow changing `Pad.pad_type` (#63)
 
 ### 0.3.0 (March 29, 2025)
 
