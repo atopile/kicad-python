@@ -284,7 +284,7 @@ class ArcTrack(BoardItem):
 
     def end_angle(self) -> Optional[float]:
         return arc_end_angle(self.start, self.mid, self.end)
-    
+
     def angle(self) -> Optional[float]:
         """Calculates the angle between the start and end of the arc in radians
 
@@ -1967,6 +1967,12 @@ class Zone(BoardItem):
         if self.is_rule_area():
             return None
         return Net(self._proto.copper_settings.net)
+
+    @net.setter
+    def net(self, net: Net):
+        if self.is_rule_area():
+            raise ValueError("cannot assign a net to rule areas")
+        self._proto.copper_settings.net.CopyFrom(net.proto)
 
     @property
     def teardrop(self) -> Optional[board_types_pb2.TeardropSettings]:

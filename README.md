@@ -8,7 +8,7 @@ planned for on or around February 1, 2025).  The existing SWIG-based Python bind
 PCB editor still exist in KiCad 9, but are in maintenance mode and will not be expanded.
 
 For more information about the IPC API, please see the
-[KiCad developer documentation](https://dev-docs.kicad.org/en/apis-and-binding/ipc-api/index.html). 
+[KiCad developer documentation](https://dev-docs.kicad.org/en/apis-and-binding/ipc-api/index.html).
 Specific documentation for developing add-ons is
 [also available](https://dev-docs.kicad.org/en/apis-and-binding/ipc-api/for-addon-developers/index.html).
 
@@ -90,6 +90,7 @@ plugins, copy or symlink them into the appropriate plugins path in order for KiC
 - Fix `Vector2.from_xy_mm` type annotations (John Hagen, !17)
 - Add `Arc.angle` and `ArcTrack.angle`; some arc angle utilities (Quentin Freimanis, !14)
 - Add `remove_items_by_id` (Anthonypark, !20)
+- Allow assigning nets to `Zone` (#62)
 
 ### 0.3.0 (March 29, 2025)
 
