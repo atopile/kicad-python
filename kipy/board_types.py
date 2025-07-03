@@ -1970,6 +1970,11 @@ class Zone(BoardItem):
 
     @net.setter
     def net(self, net: Net):
+        """
+        Assigns a net to a copper zone (cannot be used for rule areas).
+
+        .. versionadded:: 0.4.0 (setter)
+        """
         if self.is_rule_area():
             raise ValueError("cannot assign a net to rule areas")
         self._proto.copper_settings.net.CopyFrom(net.proto)
