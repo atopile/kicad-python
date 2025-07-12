@@ -10,5 +10,5 @@ build:
     - pipx ensurepath
   script:
     - pipx install poetry
-    - poetry install -v
+    - /root/.local/bin/poetry install -v
     - pytest
