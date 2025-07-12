@@ -6,10 +6,8 @@ build:
   image: $DEFAULT_FEDORA_IMAGE
   before_script:
     - git submodule update --init --depth 1
-    - dnf install -y protobuf-compiler poetry python3-virtualenv
-    - python3 -m venv env
-    - source env/bin/activate
+    - dnf install -y protobuf-compiler pipx python3-virtualenv
+    - pipx ensurepath --global
   script:
-    #- poetry build
-    - poetry install -v
+    - pipx run poetry install -v
     - pytest
