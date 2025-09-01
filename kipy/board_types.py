@@ -1307,6 +1307,17 @@ class Pad(BoardItem):
     def padstack(self) -> PadStack:
         return PadStack(proto_ref=self._proto.pad_stack)
 
+    @property
+    def pad_to_die_length(self) -> int:
+        """
+        .. versionadded:: 0.5.0
+        """
+        return self._proto.pad_to_die_length.value_nm
+
+    @pad_to_die_length.setter
+    def pad_to_die_length(self, length: int):
+        self._proto.pad_to_die_length.value_nm = length
+
 
 class Via(BoardItem):
     def __init__(self, proto: Optional[board_types_pb2.Via] = None,
