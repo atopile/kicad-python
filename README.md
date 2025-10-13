@@ -77,10 +77,12 @@ plugins, copy or symlink them into the appropriate plugins path in order for KiC
 
 ## Release History
 
-### 0.5.0 (TBD)
+### 0.5.0 (October 13, 2025)
 
 - Add `Pad.pad_to_die_length` (KiCad 9.0.4)
 - Add `Board.get_enabled_layers`, `Board.set_enabled_layers`, and `Board.get_copper_layer_count` (KiCad 9.0.5)
+- Autodetect default Flatpak socket path (Johannes Maibaum, !32)
+- Add support for `BoardCircle.rotate` (@modbw, !33)
 
 ### 0.4.0 (July 8, 2025)
 
