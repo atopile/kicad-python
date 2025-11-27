@@ -47,6 +47,7 @@ from kipy.geometry import (
     Vector2,
     Vector3D,
     PolygonWithHoles,
+    PolyLineNode,
     arc_angle,
     arc_center,
     arc_radius,
@@ -91,6 +92,11 @@ if sys.version_info >= (3, 13):
     from warnings import deprecated
 else:
     from typing_extensions import deprecated
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 
 class BoardItem(Item):
@@ -517,6 +523,8 @@ class BoardRectangle(BoardShape, Rectangle):
 
     def rotate(self, angle: Angle, center: Vector2):
         """Rotates the rectangle around the given center point by the given angle"""
+        if angle.normalize().degrees % 90 != 0:
+            raise ValueError("Can only rotate rectangles by multiples of 90 degrees.  Convert to a polygon instead.")
         self.top_left = self.top_left.rotate(angle, center)
         self.bottom_right = self.bottom_right.rotate(angle, center)
 
@@ -556,6 +564,34 @@ class BoardPolygon(BoardShape, Polygon):
         """Rotates the polygon around the given center point by the given angle"""
         for polygon in self.polygons:
             polygon.rotate(angle, center)
+
+    @classmethod
+    def from_rectangle(cls, rectangle: BoardRectangle) -> Self:
+        """Converts a BoardRectangle into a BoardPolygon with matching corners.
+
+        Other properties of the rectangle, including UUID, are preserved."""
+        obj = cls()
+        obj.proto.CopyFrom(rectangle._proto)
+        obj.proto.shape.ClearField("rectangle")
+        obj.proto.shape.polygon.SetInParent()
+        Polygon.__init__(obj, proto_ref=obj._proto.shape)
+
+        polygon = PolygonWithHoles()
+        polygon.outline.append(PolyLineNode.from_point(rectangle.top_left))
+        polygon.outline.append(
+            PolyLineNode.from_point(
+                Vector2.from_xy(rectangle.top_left.x, rectangle.bottom_right.y)
+            )
+        )
+        polygon.outline.append(PolyLineNode.from_point(rectangle.bottom_right))
+        polygon.outline.append(
+            PolyLineNode.from_point(
+                Vector2.from_xy(rectangle.bottom_right.x, rectangle.top_left.y)
+            )
+        )
+        polygon.outline.closed = True
+        obj.polygons.append(polygon)
+        return obj
 
 class BoardBezier(BoardShape, Bezier):
     """Represents a graphic bezier curve on a board or footprint"""
@@ -1595,6 +1631,10 @@ class Footprint(Wrapper):
     def items(self) -> Sequence[Wrapper]:
         return self._unwrapped_items
 
+    @items.setter
+    def items(self, items: Sequence[Wrapper]):
+        self._unwrapped_items = list(items)
+
     @property
     def pads(self) -> Sequence[Pad]:
         """Returns all pads in the footprint"""
@@ -1707,22 +1747,33 @@ class FootprintInstance(BoardItem):
             field.text.position = field.text.position.rotate(delta, self.position)
             field.text.attributes.angle += delta.degrees
 
+        updated_items = []
         for item in self.definition.items:
             if isinstance(item, Field):
                 item.text.position = item.text.position.rotate(delta, self.position)
                 item.text.attributes.angle += delta.degrees
+                updated_items.append(item)
             elif isinstance(item, Pad):
                 item.position = item.position.rotate(delta, self.position)
                 item.padstack.angle += delta
+                updated_items.append(item)
             elif isinstance(item, BoardText):
                 item.position = item.position.rotate(delta, self.position)
                 item.attributes.angle += delta.degrees
+                updated_items.append(item)
             elif isinstance(item, Zone):
                 item.rotate(delta, self.position)
+                updated_items.append(item)
             elif isinstance(item, BoardShape):
                 shape = to_concrete_board_shape(item)
                 assert shape
+                if isinstance(shape, BoardRectangle) and delta.normalize().degrees % 90 != 0:
+                    shape = BoardPolygon.from_rectangle(shape)
+
                 shape.rotate(delta, self.position)
+                updated_items.append(shape)
+
+        self.definition.items = updated_items
 
     @property
     def layer(self) -> BoardLayer.ValueType:

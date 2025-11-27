@@ -77,6 +77,10 @@ plugins, copy or symlink them into the appropriate plugins path in order for KiC
 
 ## Release History
 
+### 0.6.0 (TBD)
+
+- Fix missing conversion of rectangles into polygons when rotating by non-cardinal amounts (#86)
+
 ### 0.5.0 (October 13, 2025)
 
 - Add `Pad.pad_to_die_length` (KiCad 9.0.4)
