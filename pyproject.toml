@@ -1,5 +1,5 @@
 [project]
-name = "kicad-python"
+name = "atopile-kicad-python"
 version = "0.5.1"
 description = "KiCad API Python Bindings"
 authors = [
